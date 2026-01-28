@@ -251,37 +251,3 @@ def reset_password(student_id: str, db_session: Session = Depends(get_db), admin
     user.password = get_password_hash("1234")
     db_session.commit()
     return {"message": f"Password for {student_id} has been reset to '1234'."}
-
-# --- 테스트용 사용자 생성 (임시) ---
-# 실제 운영 시에는 별도의 사용자 등록 API 또는 관리자 페이지를 통해 추가
-@app.on_event("startup")
-def create_test_user():
-    db_session = next(get_db())
-    test_user = db_session.query(Member).filter(Member.student_id == "20240001").first()
-    if not test_user:
-        hashed_password = get_password_hash("1234") # 일반 회원 초기 비밀번호: 1234
-        new_user = Member(
-            student_id="20240001",
-            password=hashed_password,
-            name="김테스트",
-            club="테니스부",
-            status=MemberStatus.active,
-            role="member"
-        )
-        db_session.add(new_user)
-    
-    # 관리자 계정 생성 (ID: admin / PW: admin1234)
-    admin_user = db_session.query(Member).filter(Member.student_id == "admin").first()
-    if not admin_user:
-        new_admin = Member(
-            student_id="admin",
-            password=get_password_hash("admin1234"), # 관리자 초기 비밀번호: admin1234
-            name="총동연 관리자",
-            club="총동아리연합회",
-            status=MemberStatus.active,
-            role="admin"
-        )
-        db_session.add(new_admin)
-        
-    db_session.commit()
-    db_session.close()

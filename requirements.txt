@@ -8,3 +8,5 @@ python-multipart
 streamlit
 requests
 Pillow
+psycopg2-binary
+bcrypt==4.0.1
