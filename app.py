@@ -7,7 +7,12 @@ from PIL import Image
 
 # --- 기본 설정 ---
 # FastAPI 백엔드 주소
-API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
+if "API_URL" in os.environ:
+    API_URL = os.environ["API_URL"]
+elif hasattr(st, "secrets") and "API_URL" in st.secrets:
+    API_URL = st.secrets["API_URL"]
+else:
+    API_URL = "https://sphere-e317.onrender.com"
 
 # 페이지 설정 (넓은 레이아웃, 제목, 아이콘 등)
 logo_image = Image.open("logo.png")
