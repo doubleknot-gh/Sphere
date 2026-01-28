@@ -112,6 +112,10 @@ def get_current_admin(current_user: Member = Depends(get_current_user)):
 
 # --- API 엔드포인트 ---
 
+@app.get("/")
+def read_root():
+    return {"message": "Digital Membership API is running. Please access the Streamlit frontend application to use the service."}
+
 @app.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db_session: Session = Depends(get_db)):
     """
@@ -251,3 +255,43 @@ def reset_password(student_id: str, db_session: Session = Depends(get_db), admin
     user.password = get_password_hash("1234")
     db_session.commit()
     return {"message": f"Password for {student_id} has been reset to '1234'."}
+
+@app.get("/init-db")
+def init_database(db_session: Session = Depends(get_db)):
+    """
+    [초기화] 데이터베이스에 관리자 및 테스트 계정 생성
+    (Shell 접속이 어려울 때 브라우저에서 실행용)
+    """
+    messages = []
+    
+    # 1. 관리자 계정 생성
+    if not db_session.query(Member).filter(Member.student_id == "admin").first():
+        admin_user = Member(
+            student_id="admin",
+            password=get_password_hash("admin1234"),
+            name="총동연 관리자",
+            club="총동아리연합회",
+            status=MemberStatus.active,
+            role="admin"
+        )
+        db_session.add(admin_user)
+        messages.append("관리자 계정(admin) 생성 완료")
+    
+    # 2. 테스트 계정 생성
+    if not db_session.query(Member).filter(Member.student_id == "20240001").first():
+        test_user = Member(
+            student_id="20240001",
+            password=get_password_hash("1234"),
+            name="김테스트",
+            club="테니스부",
+            status=MemberStatus.active,
+            role="member"
+        )
+        db_session.add(test_user)
+        messages.append("테스트 계정(20240001) 생성 완료")
+        
+    if not messages:
+        messages.append("이미 모든 계정이 존재합니다.")
+        
+    db_session.commit()
+    return {"status": "success", "details": messages}
