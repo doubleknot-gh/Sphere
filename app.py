@@ -132,6 +132,26 @@ def show_admin_dashboard():
 
     with tab4:
         target_id = st.text_input("관리할 대상 학번")
+        
+        st.markdown("---")
+        st.subheader("소속 동아리 변경")
+        new_club_name = st.text_input("변경할 동아리 이름", placeholder="새로운 동아리명을 입력하세요")
+        if st.button("동아리 정보 업데이트"):
+            if target_id and new_club_name:
+                try:
+                    res = requests.patch(f"{API_URL}/admin/members/{target_id}/club", 
+                                         headers=headers, params={"club": new_club_name})
+                    if res.status_code == 200:
+                        st.success("소속 동아리가 변경되었습니다.")
+                    else:
+                        st.error(f"변경 실패: {res.json().get('detail')}")
+                except:
+                    st.error("서버 연결 실패")
+            else:
+                st.warning("학번과 변경할 동아리 이름을 모두 입력해주세요.")
+
+        st.markdown("---")
+        st.subheader("계정 상태 및 관리")
         col1, col2 = st.columns(2)
         with col1:
             new_status = st.selectbox("상태 선택", ["active", "inactive"])

@@ -237,6 +237,16 @@ def update_member_status(student_id: str, status: str, db_session: Session = Dep
     db_session.commit()
     return {"message": "상태 변경 완료"}
 
+@app.patch("/admin/members/{student_id}/club")
+def update_member_club(student_id: str, club: str, db_session: Session = Depends(get_db), admin: Member = Depends(get_current_admin)):
+    user = db_session.query(Member).filter(Member.student_id == student_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.club = club
+    db_session.commit()
+    return {"message": "소속 동아리 변경 완료"}
+
 @app.delete("/admin/members/{student_id}")
 def delete_member(student_id: str, db_session: Session = Depends(get_db), admin: Member = Depends(get_current_admin)):
     user = db_session.query(Member).filter(Member.student_id == student_id).first()
