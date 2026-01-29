@@ -25,7 +25,7 @@ st.set_page_config(page_title="디지털 회원증", layout="wide", page_icon=lo
 
 # --- CSS 스타일 ---
 def local_css(file_name):
-    with open(file_name) as f:
+    with open(file_name, encoding="utf-8") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 local_css("style.css")
@@ -193,13 +193,23 @@ def show_membership_card():
     # 로고 표시
     st.image(logo_image, width=150)
     
-    # 회원증 카드 UI (단순화된 버전)
+    # 회원증 카드 UI (세련된 신용카드 스타일)
     st.markdown(f"""
         <div class="membership-card">
-            <h2>{info['name']}</h2>
-            <p>{info['student_id']}</p>
-            <p class="club">{info.get('club', '소속 없음')}</p>
-            <div class="time" id="real-time"></div>
+            <div class="card-header">
+                <div class="card-chip"></div>
+                <div class="card-logo">DIGITAL MEMBER</div>
+            </div>
+            <div class="card-body">
+                <div class="card-label">NAME</div>
+                <h2>{info['name']}</h2>
+                <div class="card-label">STUDENT ID</div>
+                <p class="student-id">{info['student_id']}</p>
+            </div>
+            <div class="card-footer">
+                <p class="club">{info.get('club', '소속 없음')}</p>
+                <div class="time" id="real-time"></div>
+            </div>
         </div>
     """, unsafe_allow_html=True)
 
