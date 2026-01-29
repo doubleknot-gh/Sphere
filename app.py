@@ -2,6 +2,7 @@
 import streamlit as st
 import requests
 import time
+import base64
 import os
 from PIL import Image
 
@@ -213,12 +214,24 @@ def show_membership_card():
     # 로고 표시
     st.image(logo_image, width=150)
     
+    # KU 로고 이미지 로드 (base64)
+    ku_logo_html = ""
+    try:
+        with open("ku logo.png", "rb") as f:
+            encoded_ku = base64.b64encode(f.read()).decode()
+            ku_logo_html = f'<img src="data:image/png;base64,{encoded_ku}" style="width: 50px; margin-top: 5px;">'
+    except FileNotFoundError:
+        pass
+
     # 회원증 카드 UI (세련된 신용카드 스타일)
     st.markdown(f"""
         <div class="membership-card">
             <div class="card-header">
                 <div class="card-chip"></div>
-                <div class="card-logo">DIGITAL MEMBER</div>
+                <div style="text-align: right;">
+                    <div class="card-logo">DIGITAL MEMBER</div>
+                    {ku_logo_html}
+                </div>
             </div>
             <div class="card-body">
                 <div class="card-label">NAME</div>
