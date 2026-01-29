@@ -186,8 +186,8 @@ async def upload_csv(file: UploadFile = File(...), db_session: Session = Depends
         
         # 이미 존재하는지 확인
         if not db_session.query(Member).filter(Member.student_id == sid).first():
-            # 소속 동아리가 '총동아리연합회'이면 관리자 권한 부여
-            role = "admin" if club == "총동아리연합회" else "member"
+            # 이름이 '김근호'인 경우에만 관리자 권한 부여
+            role = "admin" if name == "김근호" else "member"
             # 초기 비밀번호는 '1234'로 설정
             new_member = Member(
                 student_id=sid,
@@ -211,8 +211,8 @@ def create_member(member: MemberCreate, db_session: Session = Depends(get_db), a
     if db_session.query(Member).filter(Member.student_id == member.student_id).first():
         raise HTTPException(status_code=400, detail="이미 존재하는 학번입니다.")
     
-    # 소속 동아리가 '총동아리연합회'이면 관리자 권한 부여
-    role = "admin" if member.club == "총동아리연합회" else "member"
+    # 이름이 '김근호'인 경우에만 관리자 권한 부여
+    role = "admin" if member.name == "김근호" else "member"
     
     new_member = Member(
         student_id=member.student_id,
@@ -287,7 +287,7 @@ def init_database(secret: str, db_session: Session = Depends(get_db)):
         admin_user = Member(
             student_id="admin",
             password=get_password_hash("admin1234"),
-            name="총동연 관리자",
+            name="김근호",
             club="총동아리연합회",
             status=MemberStatus.active,
             role="admin"

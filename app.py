@@ -135,7 +135,7 @@ def show_admin_dashboard():
         
         st.markdown("---")
         st.subheader("소속 동아리 변경")
-        new_club_name = st.text_input("변경할 동아리 이름", placeholder="새로운 동아리명을 입력하세요")
+        new_club_name = st.text_input("변경할 동아리 이름", placeholder="예: 테니스부, 축구부 (여러 개는 콤마로 구분)")
         if st.button("동아리 정보 업데이트"):
             if target_id and new_club_name:
                 try:
