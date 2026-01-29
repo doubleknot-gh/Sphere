@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 import csv
 import codecs
+import os
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -26,9 +27,12 @@ models.Base.metadata.create_all(bind=db.engine)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT 설정
-SECRET_KEY = "your-super-secret-key" # 실제 환경에서는 환경 변수로 관리하세요.
+SECRET_KEY = os.getenv("SECRET_KEY", "a-very-secret-key-for-local-development")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+# DB 초기화용 비밀키
+INIT_DB_SECRET = os.getenv("INIT_DB_SECRET", "local-init-secret")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -257,12 +261,16 @@ def reset_password(student_id: str, db_session: Session = Depends(get_db), admin
     return {"message": f"Password for {student_id} has been reset to '1234'."}
 
 @app.get("/init-db")
-def init_database(db_session: Session = Depends(get_db)):
+def init_database(secret: str, db_session: Session = Depends(get_db)):
     """
     [초기화] 데이터베이스에 관리자 및 테스트 계정 생성
     (Shell 접속이 어려울 때 브라우저에서 실행용)
     """
     messages = []
+
+    # 비밀키가 일치하지 않으면 초기화 거부
+    if secret != INIT_DB_SECRET:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid secret for DB initialization")
     
     # 1. 관리자 계정 생성
     if not db_session.query(Member).filter(Member.student_id == "admin").first():

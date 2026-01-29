@@ -16,4 +16,3 @@ class Member(Base):
     club = Column(String)
     status = Column(Enum(MemberStatus), default=MemberStatus.active)
     role = Column(String, default="member")  # 'admin' 또는 'member'
-    is_active = Column(Boolean, default=True)
