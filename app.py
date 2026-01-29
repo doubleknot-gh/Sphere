@@ -7,12 +7,17 @@ from PIL import Image
 
 # --- 기본 설정 ---
 # FastAPI 백엔드 주소
-if "API_URL" in os.environ:
+API_URL = "http://127.0.0.1:8000"  # 로컬 개발용 기본값
+
+if "API_URL" in os.environ: # Render 환경
     API_URL = os.environ["API_URL"]
-elif hasattr(st, "secrets") and "API_URL" in st.secrets:
-    API_URL = st.secrets["API_URL"]
-else:
-    API_URL = "https://sphere-e317.onrender.com"
+else: # Streamlit Cloud 또는 로컬 환경
+    try:
+        if "API_URL" in st.secrets:
+            API_URL = st.secrets["API_URL"]
+    except st.errors.StreamlitAPIException:
+        # 로컬에서 secrets.toml 파일이 없을 때 예외 발생, 기본값을 사용하므로 pass
+        pass
 
 # 페이지 설정 (넓은 레이아웃, 제목, 아이콘 등)
 logo_image = Image.open("logo.png")
