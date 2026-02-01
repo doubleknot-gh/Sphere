@@ -224,6 +224,11 @@ input::placeholder {
     border-right: 1px solid rgba(228, 212, 164, 0.2);
 }
 
+/* 사이드바 일반 텍스트 */
+[data-testid="stSidebar"] p, [data-testid="stSidebar"] span {
+    color: #FFFFFF !important;
+}
+
 /* 사이드바 헤더 텍스트 */
 [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
     color: #E4D4A4 !important;
@@ -249,10 +254,20 @@ input::placeholder {
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
+/* 라디오 버튼 내부 텍스트(p태그) 강제 스타일링 */
+[data-testid="stSidebar"] [data-testid="stRadio"] label p {
+    color: #FFFFFF !important;
+    font-weight: 800 !important;
+}
+
 [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
     background: linear-gradient(90deg, rgba(228, 212, 164, 0.25) 0%, transparent 100%);
     border-left: 5px solid #E4D4A4;
     padding-left: 28px !important; /* 호버 시 이동 효과 */
+    color: #E4D4A4 !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stRadio"] label:hover p {
     color: #E4D4A4 !important;
 }
 
