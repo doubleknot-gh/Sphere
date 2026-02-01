@@ -195,6 +195,8 @@ input::placeholder {
 
 /* 버튼 스타일 */
 .stButton > button {
+.stButton > button,
+div[data-testid="stForm"] .stButton > button {
     width: 100%;
     background-color: #E4D4A4 !important;
     color: #050A18 !important;
@@ -209,12 +211,16 @@ input::placeholder {
 
 /* 5. 버튼 글자색을 배경과 대비되게 (어두운 배경엔 밝은 버튼) */
 .stButton > button p {
+.stButton > button p,
+div[data-testid="stForm"] .stButton > button p {
     color: #050A18 !important; /* 버튼 배경이 밝으므로 글씨는 어둡게 */
     font-weight: 800 !important;
     font-size: 1.2rem !important;
 }
 
 .stButton > button:hover {
+.stButton > button:hover,
+div[data-testid="stForm"] .stButton > button:hover {
     background-color: #E4D4A4 !important; /* 호버 시 색상 변경 제거 */
     color: #050A18 !important;
     border-color: #fff !important;
@@ -223,6 +229,8 @@ input::placeholder {
 }
 
 .stButton > button:active, .stButton > button:focus {
+.stButton > button:active, .stButton > button:focus,
+div[data-testid="stForm"] .stButton > button:active, div[data-testid="stForm"] .stButton > button:focus {
     background-color: #E4D4A4 !important;
     color: #050A18 !important;
     border-color: #E4D4A4 !important;
