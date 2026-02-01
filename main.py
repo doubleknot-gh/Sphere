@@ -243,16 +243,23 @@ async def upload_csv(file: UploadFile = File(...), db_session: Session = Depends
     # [중요] 이번 요청에서 새로 추가된 회원을 임시 저장 (파일 내 중복 방지)
     new_members_cache = {}
 
+    # [최적화] 파일에 있는 학번들을 미리 DB에서 조회하여 맵핑 (N+1 쿼리 방지 및 정확성 향상)
+    # 헤더가 아닌 유효한 학번만 추출
+    valid_sids = [r[0] for r in rows if not (any(h in r[0] for h in ["학번", "Student", "ID", "id"]) or any(h in r[1] for h in ["이름", "Name", "성명"]))]
+    
+    # DB에 존재하는 회원들을 한 번에 가져옴
+    existing_members_query = db_session.query(Member).filter(Member.student_id.in_(valid_sids)).all()
+    existing_members_map = {m.student_id: m for m in existing_members_query}
+
     try:
         for sid, name, club in rows:
             # 헤더 행 스킵 (학번이나 이름 자리에 제목이 들어있는 경우 건너뜀)
             # 예: '학번', 'Student ID', '이름', 'Name', '성명' 등이 포함되면 헤더로 간주
             if any(header in sid for header in ["학번", "Student", "ID", "id"]) or any(header in name for header in ["이름", "Name", "성명"]): continue
 
-            # 1. DB에 이미 존재하는지 확인
-            existing_member = db_session.query(Member).filter(Member.student_id == sid).first()
-
-            if existing_member:
+            # 1. DB에 이미 존재하는지 확인 (미리 가져온 맵에서 확인)
+            if sid in existing_members_map:
+                existing_member = existing_members_map[sid]
                 # 이미 존재하는 경우: 소속 동아리 추가 (중복되지 않게)
                 current_clubs = [c.strip() for c in (existing_member.club or "").split(',')]
                 if club and club not in current_clubs:
