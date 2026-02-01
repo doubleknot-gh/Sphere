@@ -246,7 +246,6 @@ input::placeholder {
     font-size: 1.25rem !important;
     font-weight: 700 !important;
     letter-spacing: 0.5px;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
@@ -255,7 +254,6 @@ input::placeholder {
     border-left: 5px solid #E4D4A4;
     padding-left: 28px !important; /* 호버 시 이동 효과 */
     color: #E4D4A4 !important;
-    text-shadow: 0 0 10px rgba(228, 212, 164, 0.4);
 }
 
 /* 2. 탭(Tabs) 스타일 개선 - 알약(Pill) 형태 */
