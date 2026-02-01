@@ -194,31 +194,39 @@ input::placeholder {
 }
 
 /* 버튼 스타일 */
-.stButton button {
+.stButton > button {
     width: 100%;
     background-color: #E4D4A4 !important;
     color: #050A18 !important;
-    border: none !important;
+    border: 1px solid #E4D4A4 !important;
     font-weight: 800 !important;
     border-radius: 12px !important;
     padding: 1rem !important;
     font-size: 1.2rem !important;
     box-shadow: 0 0 15px rgba(228, 212, 164, 0.4) !important; /* 기본 상태에서 광채 효과 */
-    transition: transform 0.2s ease !important;
+    transition: all 0.3s ease !important;
 }
 
 /* 5. 버튼 글자색을 배경과 대비되게 (어두운 배경엔 밝은 버튼) */
-.stButton button p {
+.stButton > button p {
     color: #050A18 !important; /* 버튼 배경이 밝으므로 글씨는 어둡게 */
     font-weight: 800 !important;
     font-size: 1.2rem !important;
 }
 
-.stButton button:hover {
+.stButton > button:hover {
     background-color: #E4D4A4 !important; /* 호버 시 색상 변경 제거 */
     color: #050A18 !important;
-    transform: translateY(-2px);
-    box-shadow: 0 0 25px rgba(228, 212, 164, 0.7) !important; /* 광채 강화 */
+    border-color: #fff !important;
+    transform: translateY(-3px) scale(1.02) !important;
+    box-shadow: 0 0 30px rgba(228, 212, 164, 0.8) !important; /* 광채 강화 */
+}
+
+.stButton > button:active, .stButton > button:focus {
+    background-color: #E4D4A4 !important;
+    color: #050A18 !important;
+    border-color: #E4D4A4 !important;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.2) !important;
 }
 
 /* --- 관리자 대시보드 스타일 (프리미엄 다크 테마) --- */
