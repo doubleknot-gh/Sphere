@@ -184,12 +184,23 @@ async def upload_csv(file: UploadFile = File(...), db_session: Session = Depends
     content = await file.read()
 
     if filename.endswith(".csv"):
-        decoded = content.decode('utf-8-sig').splitlines() # utf-8-sig로 BOM 제거
-        reader = csv.reader(decoded)
+        try:
+            decoded = content.decode('utf-8-sig')
+        except UnicodeDecodeError:
+            try:
+                decoded = content.decode('cp949')
+            except UnicodeDecodeError:
+                raise HTTPException(status_code=400, detail="CSV 파일 인코딩 오류: UTF-8 또는 CP949 형식이 아닙니다.")
+
+        reader = csv.reader(decoded.splitlines())
         for row in reader:
             if len(row) >= 3:
                 # 입력 순서: 이름(0), 학번(1), 소속동아리(2) -> DB 처리용: (학번, 이름, 소속동아리)
-                rows.append((row[1].strip(), row[0].strip(), row[2].strip()))
+                sid = row[1].strip()
+                name = row[0].strip()
+                club = row[2].strip()
+                if sid and name:
+                    rows.append((sid, name, club))
     
     elif filename.endswith(".xlsx"):
         try:
@@ -217,30 +228,35 @@ async def upload_csv(file: UploadFile = File(...), db_session: Session = Depends
     else:
         raise HTTPException(status_code=400, detail="지원하지 않는 파일 형식입니다. .csv 또는 .xlsx 파일을 사용해주세요.")
     
-    count = 0
-    for sid, name, club in rows:
-        # 헤더 행 스킵 (학번이나 이름 자리에 제목이 들어있는 경우 건너뜀)
-        # 예: '학번', 'Student ID', '이름', 'Name', '성명' 등이 포함되면 헤더로 간주
-        if any(header in sid for header in ["학번", "Student", "ID", "id"]) or any(header in name for header in ["이름", "Name", "성명"]): continue
+    try:
+        count = 0
+        for sid, name, club in rows:
+            # 헤더 행 스킵 (학번이나 이름 자리에 제목이 들어있는 경우 건너뜀)
+            # 예: '학번', 'Student ID', '이름', 'Name', '성명' 등이 포함되면 헤더로 간주
+            if any(header in sid for header in ["학번", "Student", "ID", "id"]) or any(header in name for header in ["이름", "Name", "성명"]): continue
 
-        # 이미 존재하는지 확인
-        if not db_session.query(Member).filter(Member.student_id == sid).first():
-            # 이름이 '김근호'인 경우에만 관리자 권한 부여
-            role = "admin" if name == "김근호" else "member"
-            # 초기 비밀번호는 '1234'로 설정
-            new_member = Member(
-                student_id=sid,
-                name=name,
-                club=club,
-                password=get_password_hash("1234"),
-                role=role,
-                status=MemberStatus.active
-            )
-            db_session.add(new_member)
-            count += 1
-    
-    db_session.commit()
-    return {"message": f"{count}명의 회원이 등록되었습니다."}
+            # 이미 존재하는지 확인
+            if not db_session.query(Member).filter(Member.student_id == sid).first():
+                # 소속 동아리가 '총동아리연합회'이면 관리자 권한 부여
+                role = "admin" if club == "총동아리연합회" else "member"
+                # 초기 비밀번호는 '1234'로 설정
+                new_member = Member(
+                    student_id=sid,
+                    name=name,
+                    club=club,
+                    password=get_password_hash("1234"),
+                    role=role,
+                    status=MemberStatus.active
+                )
+                db_session.add(new_member)
+                count += 1
+        
+        db_session.commit()
+        return {"message": f"{count}명의 회원이 등록되었습니다."}
+    except Exception as e:
+        db_session.rollback()
+        print(f"Upload Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"회원 등록 중 서버 오류가 발생했습니다: {str(e)}")
 
 @app.post("/admin/members", response_model=MemberInfo)
 def create_member(member: MemberCreate, db_session: Session = Depends(get_db), admin: Member = Depends(get_current_admin)):
@@ -250,8 +266,8 @@ def create_member(member: MemberCreate, db_session: Session = Depends(get_db), a
     if db_session.query(Member).filter(Member.student_id == member.student_id).first():
         raise HTTPException(status_code=400, detail="이미 존재하는 학번입니다.")
     
-    # 이름이 '김근호'인 경우에만 관리자 권한 부여
-    role = "admin" if member.name == "김근호" else "member"
+    # 소속 동아리가 '총동아리연합회'이면 관리자 권한 부여
+    role = "admin" if member.club == "총동아리연합회" else "member"
     
     new_member = Member(
         student_id=member.student_id,
