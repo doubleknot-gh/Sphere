@@ -66,13 +66,13 @@ def add_particle_effect():
                 z-index: 1;
                 pointer-events: none;
             }}
-            .particle {
+            .particle {{
                 position: absolute;
                 border-radius: 50%;
                 background: rgba(255, 255, 255, 0.5);
                 box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
                 animation: float infinite linear;
-            }
+            }}
             @keyframes float {{
                 0% {{ transform: translateY(0) translateX(0); opacity: 0; }}
                 10% {{ opacity: 1; }}
