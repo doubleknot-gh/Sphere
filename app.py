@@ -231,7 +231,21 @@ def show_admin_dashboard():
                     st.warning("모든 정보를 입력해주세요.")
 
     with tab4:
-        target_id = st.text_input("관리할 대상 학번")
+        # 회원 목록 데이터가 없으면 로드 시도
+        if not st.session_state.get('admin_member_list'):
+            try:
+                res = requests.get(f"{API_URL}/admin/members", headers=headers)
+                if res.status_code == 200:
+                    st.session_state.admin_member_list = res.json()
+            except:
+                pass
+
+        if st.session_state.get('admin_member_list'):
+            member_dict = {f"{m['name']} ({m['student_id']})": m['student_id'] for m in st.session_state.admin_member_list}
+            selected_member = st.selectbox("관리할 대상 선택", options=list(member_dict.keys()))
+            target_id = member_dict[selected_member]
+        else:
+            target_id = st.text_input("관리할 대상 학번")
         
         st.markdown("---")
         st.subheader("소속 동아리 변경")
