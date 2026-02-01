@@ -4,6 +4,7 @@ import requests
 import time
 import base64
 import os
+import pandas as pd
 from PIL import Image
 
 # --- 기본 설정 ---
@@ -99,38 +100,52 @@ def show_admin_dashboard():
                 st.error("서버 연결 실패")
         
         if st.session_state.admin_member_list:
-            st.dataframe(st.session_state.admin_member_list, use_container_width=True)
+            # 데이터프레임 변환 및 선택 컬럼 추가
+            df = pd.DataFrame(st.session_state.admin_member_list)
+            df.insert(0, "선택", False)
             
-            st.markdown("---")
-            st.subheader("선택 회원 삭제")
+            # 데이터 에디터로 출력 (체크박스 기능)
+            edited_df = st.data_editor(
+                df,
+                column_config={
+                    "선택": st.column_config.CheckboxColumn("선택", default=False)
+                },
+                disabled=["student_id", "name", "club", "status", "role"],
+                hide_index=True,
+                use_container_width=True,
+                key="member_list_editor"
+            )
             
-            member_options = {f"{m['name']} ({m['student_id']})": m['student_id'] for m in st.session_state.admin_member_list}
-            selected_member_label = st.selectbox("삭제할 회원을 선택하세요", options=list(member_options.keys()))
+            # 선택된 회원 필터링
+            selected_rows = edited_df[edited_df["선택"]]
             
-            if st.button("삭제하기", type="primary", key="delete_member_tab1"):
-                st.session_state['delete_confirm_target_tab1'] = member_options[selected_member_label]
+            if not selected_rows.empty:
+                st.markdown("---")
+                if st.button(f"선택한 {len(selected_rows)}명 삭제하기", type="primary", key="delete_selected_btn"):
+                    st.session_state['delete_confirm_targets'] = selected_rows['student_id'].tolist()
             
-            if st.session_state.get('delete_confirm_target_tab1'):
-                st.warning(f"정말 {st.session_state['delete_confirm_target_tab1']} 회원을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")
+            # 삭제 확인 및 처리
+            if st.session_state.get('delete_confirm_targets'):
+                targets = st.session_state['delete_confirm_targets']
+                st.warning(f"정말 {len(targets)}명의 회원을 삭제하시겠습니까? (복구 불가)")
                 col_yes, col_no = st.columns(2)
                 with col_yes:
-                    if st.button("✅ 예, 삭제합니다", key="confirm_yes_tab1"):
-                        target_id = st.session_state['delete_confirm_target_tab1']
-                        try:
-                            res = requests.delete(f"{API_URL}/admin/members/{target_id}", headers=headers)
-                            if res.status_code == 200:
-                                st.success("삭제되었습니다.")
-                                st.session_state.admin_member_list = [m for m in st.session_state.admin_member_list if m['student_id'] != target_id]
-                                del st.session_state['delete_confirm_target_tab1']
-                                time.sleep(0.5)
-                                st.rerun()
-                            else:
-                                st.error(f"삭제 실패: {res.json().get('detail')}")
-                        except requests.exceptions.RequestException:
-                            st.error("서버 연결 실패")
+                    if st.button("✅ 예, 일괄 삭제", key="confirm_yes_bulk"):
+                        success_cnt = 0
+                        for tid in targets:
+                            try:
+                                requests.delete(f"{API_URL}/admin/members/{tid}", headers=headers)
+                                success_cnt += 1
+                            except: pass
+                        
+                        st.success(f"{success_cnt}명 삭제 완료.")
+                        st.session_state.admin_member_list = [m for m in st.session_state.admin_member_list if m['student_id'] not in targets]
+                        del st.session_state['delete_confirm_targets']
+                        time.sleep(1)
+                        st.rerun()
                 with col_no:
-                    if st.button("❌ 취소", key="confirm_no_tab1"):
-                        del st.session_state['delete_confirm_target_tab1']
+                    if st.button("❌ 취소", key="confirm_no_bulk"):
+                        del st.session_state['delete_confirm_targets']
                         st.rerun()
 
     with tab2:
