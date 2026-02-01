@@ -187,7 +187,7 @@ async def upload_csv(file: UploadFile = File(...), db_session: Session = Depends
         reader = csv.reader(decoded)
         for row in reader:
             if len(row) >= 3:
-                # 순서 변경: 이름(0), 학번(1), 소속동아리(2) -> (학번, 이름, 소속동아리)로 저장
+                # 입력 순서: 이름(0), 학번(1), 소속동아리(2) -> DB 처리용: (학번, 이름, 소속동아리)
                 rows.append((row[1].strip(), row[0].strip(), row[2].strip()))
     
     elif filename.endswith(".xlsx"):
@@ -197,7 +197,7 @@ async def upload_csv(file: UploadFile = File(...), db_session: Session = Depends
             for row in ws.iter_rows(values_only=True):
                 if row and len(row) >= 3:
                     # 데이터가 없는 경우 방지 및 문자열 변환
-                    # 순서 변경: 이름(0), 학번(1), 소속동아리(2)
+                    # 입력 순서: 이름(0), 학번(1), 소속동아리(2)
                     name = str(row[0]).strip() if row[0] is not None else ""
                     sid = str(row[1]).strip() if row[1] is not None else ""
                     club = str(row[2]).strip() if row[2] is not None else ""
