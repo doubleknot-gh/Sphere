@@ -5,6 +5,7 @@ import time
 import base64
 import os
 import io
+import random
 import pandas as pd
 from PIL import Image
 
@@ -33,54 +34,56 @@ def local_css(file_name):
 
 local_css("style.css")
 
-# --- 파티클 배경 효과 (JavaScript) ---
+# --- 파티클 배경 효과 (CSS + Python) ---
 def add_particle_effect():
-    st.components.v1.html("""
+    particles_html = ""
+    for _ in range(50):
+        size = random.uniform(1, 4)
+        left = random.uniform(0, 100)
+        top = random.uniform(0, 100)
+        duration = random.uniform(10, 30)
+        delay = random.uniform(-20, 0)
+        
+        particles_html += f"""
+        <div class="particle" style="
+            width: {size}px;
+            height: {size}px;
+            left: {left}vw;
+            top: {top}vh;
+            animation-duration: {duration}s;
+            animation-delay: {delay}s;
+        "></div>
+        """
+
+    st.markdown(f"""
         <style>
-            body { margin: 0; overflow: hidden; background: transparent; }
+            #particles {{
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                z-index: 1;
+                pointer-events: none;
+            }}
             .particle {
                 position: absolute;
                 border-radius: 50%;
                 background: rgba(255, 255, 255, 0.5);
                 box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-                animation: float 20s infinite linear;
+                animation: float infinite linear;
             }
-            @keyframes float {
-                0% { transform: translateY(0) translateX(0); opacity: 0; }
-                10% { opacity: 1; }
-                90% { opacity: 1; }
-                100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
-            }
+            @keyframes float {{
+                0% {{ transform: translateY(0) translateX(0); opacity: 0; }}
+                10% {{ opacity: 1; }}
+                90% {{ opacity: 1; }}
+                100% {{ transform: translateY(-100vh) translateX(20px); opacity: 0; }}
+            }}
         </style>
-        <div id="particles"></div>
-        <script>
-            const particleContainer = document.getElementById('particles');
-            const particleCount = 50; // 파티클 개수
-
-            function createParticle() {
-                const particle = document.createElement('div');
-                particle.classList.add('particle');
-                
-                // 랜덤 크기 및 위치
-                const size = Math.random() * 3 + 1;
-                particle.style.width = `${size}px`;
-                particle.style.height = `${size}px`;
-                particle.style.left = `${Math.random() * 100}vw`;
-                particle.style.top = `${Math.random() * 100}vh`;
-                
-                // 랜덤 애니메이션 속도
-                const duration = Math.random() * 20 + 10;
-                particle.style.animationDuration = `${duration}s`;
-                particle.style.animationDelay = `-${Math.random() * 20}s`; // 미리 시작된 것처럼
-
-                particleContainer.appendChild(particle);
-            }
-
-            for (let i = 0; i < particleCount; i++) {
-                createParticle();
-            }
-        </script>
-    """, height=0, scrolling=False)
+        <div id="particles">
+            {particles_html}
+        </div>
+    """, unsafe_allow_html=True)
 
 # --- 세션 상태 초기화 ---
 if 'token' not in st.session_state:
