@@ -157,7 +157,11 @@ def show_admin_dashboard():
                 if res.status_code == 200:
                     st.success("업로드 성공!")
                 else:
-                    st.error(f"업로드 실패: {res.text}")
+                    try:
+                        err_msg = res.json().get('detail')
+                    except:
+                        err_msg = res.text
+                    st.error(f"업로드 실패: {err_msg}")
             except requests.exceptions.RequestException:
                 st.error("서버 연결 실패")
 

@@ -204,14 +204,16 @@ async def upload_csv(file: UploadFile = File(...), db_session: Session = Depends
                     if sid and name:
                         rows.append((sid, name, club))
         except Exception as e:
-            raise HTTPException(status_code=400, detail=f"엑셀 파일을 읽을 수 없습니다. 파일이 손상되었거나 암호화되었는지 확인해주세요. ({str(e)})")
+            print(f"Excel Error: {str(e)}") # 로그에 에러 출력
+            raise HTTPException(status_code=400, detail=f"엑셀 파일을 읽는 중 오류가 발생했습니다. 파일이 .xlsx 형식이 맞는지, 암호가 걸려있지 않은지 확인해주세요. (에러: {str(e)})")
     else:
         raise HTTPException(status_code=400, detail="지원하지 않는 파일 형식입니다. .csv 또는 .xlsx 파일을 사용해주세요.")
     
     count = 0
     for sid, name, club in rows:
-        # 헤더 행 스킵 (학번, 이름, 소속동아리 등이 들어있는 경우)
-        if sid == "학번" or name == "이름": continue
+        # 헤더 행 스킵 (학번이나 이름 자리에 제목이 들어있는 경우 건너뜀)
+        # 예: '학번', 'Student ID', '이름', 'Name', '성명' 등이 포함되면 헤더로 간주
+        if any(header in sid for header in ["학번", "Student", "ID", "id"]) or any(header in name for header in ["이름", "Name", "성명"]): continue
 
         # 이미 존재하는지 확인
         if not db_session.query(Member).filter(Member.student_id == sid).first():
