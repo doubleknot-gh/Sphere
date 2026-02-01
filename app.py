@@ -85,15 +85,41 @@ def show_admin_dashboard():
     headers = {"Authorization": f"Bearer {st.session_state.token}"}
 
     with tab1:
+        if 'admin_member_list' not in st.session_state:
+            st.session_state.admin_member_list = []
+
         if st.button("회원 목록 새로고침"):
             try:
                 res = requests.get(f"{API_URL}/admin/members", headers=headers)
                 if res.status_code == 200:
-                    st.dataframe(res.json())
+                    st.session_state.admin_member_list = res.json()
                 else:
                     st.error("데이터를 불러올 수 없습니다.")
             except:
                 st.error("서버 연결 실패")
+        
+        if st.session_state.admin_member_list:
+            st.dataframe(st.session_state.admin_member_list, use_container_width=True)
+            
+            st.markdown("---")
+            st.subheader("선택 회원 삭제")
+            
+            member_options = {f"{m['name']} ({m['student_id']})": m['student_id'] for m in st.session_state.admin_member_list}
+            selected_member_label = st.selectbox("삭제할 회원을 선택하세요", options=list(member_options.keys()))
+            
+            if st.button("삭제하기", type="primary", key="delete_member_tab1"):
+                target_id = member_options[selected_member_label]
+                try:
+                    res = requests.delete(f"{API_URL}/admin/members/{target_id}", headers=headers)
+                    if res.status_code == 200:
+                        st.success("삭제되었습니다.")
+                        # 목록에서 제거 후 리런
+                        st.session_state.admin_member_list = [m for m in st.session_state.admin_member_list if m['student_id'] != target_id]
+                        st.rerun()
+                    else:
+                        st.error(f"삭제 실패: {res.json().get('detail')}")
+                except:
+                    st.error("서버 오류")
 
     with tab2:
         uploaded_file = st.file_uploader("CSV 또는 Excel 파일 업로드 (학번, 이름, 소속동아리)", type=["csv", "xlsx"])
