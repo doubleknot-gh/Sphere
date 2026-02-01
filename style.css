@@ -249,9 +249,9 @@ div[data-testid="stForm"] .stButton > button:active, div[data-testid="stForm"] .
     border-right: 1px solid rgba(228, 212, 164, 0.2);
 }
 
-/* 사이드바 일반 텍스트 (기본 흰색) */
-[data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] div {
-    color: #FFFFFF !important;
+/* 사이드바 내 모든 텍스트 기본 흰색 설정 */
+[data-testid="stSidebar"] * {
+    color: #FFFFFF;
 }
 
 /* 사이드바 헤더 텍스트 (골드 포인트) */
@@ -275,6 +275,7 @@ div[data-testid="stForm"] .stButton > button:active, div[data-testid="stForm"] .
     border-radius: 0 10px 10px 0;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     cursor: pointer;
+    margin-bottom: 5px;
 }
 
 /* 메뉴 텍스트 (p태그) 스타일 - 굵고 밝게 */
@@ -295,6 +296,17 @@ div[data-testid="stForm"] .stButton > button:active, div[data-testid="stForm"] .
 
 /* 호버 시 텍스트 색상 골드로 변경 */
 [data-testid="stSidebar"] [data-testid="stRadio"] label:hover p {
+    color: #E4D4A4 !important;
+}
+
+/* 선택된 항목 스타일 (강조) */
+[data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) {
+    background: linear-gradient(90deg, rgba(228, 212, 164, 0.3) 0%, transparent 100%);
+    border-left: 5px solid #E4D4A4;
+    padding-left: 28px !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) p {
     color: #E4D4A4 !important;
 }
 
