@@ -252,6 +252,21 @@ def show_admin_dashboard():
 
         st.markdown("---")
         st.subheader("계정 상태 및 관리")
+        
+        # 권한 변경 기능 추가
+        new_role = st.selectbox("권한 설정", ["member", "admin"], index=0)
+        if st.button("권한 변경 적용"):
+            if target_id:
+                try:
+                    res = requests.patch(f"{API_URL}/admin/members/{target_id}/role", 
+                                         headers=headers, params={"role": new_role})
+                    if res.status_code == 200: st.success(f"권한이 '{new_role}'로 변경되었습니다.")
+                    else: st.error(f"변경 실패: {res.json().get('detail')}")
+                except requests.exceptions.RequestException:
+                    st.error("서버 연결 실패")
+            else:
+                st.warning("학번을 입력해주세요.")
+
         col1, col2 = st.columns(2)
         with col1:
             new_status = st.selectbox("상태 선택", ["active", "inactive"])
