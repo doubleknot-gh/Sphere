@@ -95,7 +95,7 @@ def show_admin_dashboard():
                     st.session_state.admin_member_list = res.json()
                 else:
                     st.error("데이터를 불러올 수 없습니다.")
-            except:
+            except requests.exceptions.RequestException:
                 st.error("서버 연결 실패")
         
         if st.session_state.admin_member_list:
@@ -108,18 +108,30 @@ def show_admin_dashboard():
             selected_member_label = st.selectbox("삭제할 회원을 선택하세요", options=list(member_options.keys()))
             
             if st.button("삭제하기", type="primary", key="delete_member_tab1"):
-                target_id = member_options[selected_member_label]
-                try:
-                    res = requests.delete(f"{API_URL}/admin/members/{target_id}", headers=headers)
-                    if res.status_code == 200:
-                        st.success("삭제되었습니다.")
-                        # 목록에서 제거 후 리런
-                        st.session_state.admin_member_list = [m for m in st.session_state.admin_member_list if m['student_id'] != target_id]
+                st.session_state['delete_confirm_target_tab1'] = member_options[selected_member_label]
+            
+            if st.session_state.get('delete_confirm_target_tab1'):
+                st.warning(f"정말 {st.session_state['delete_confirm_target_tab1']} 회원을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")
+                col_yes, col_no = st.columns(2)
+                with col_yes:
+                    if st.button("✅ 예, 삭제합니다", key="confirm_yes_tab1"):
+                        target_id = st.session_state['delete_confirm_target_tab1']
+                        try:
+                            res = requests.delete(f"{API_URL}/admin/members/{target_id}", headers=headers)
+                            if res.status_code == 200:
+                                st.success("삭제되었습니다.")
+                                st.session_state.admin_member_list = [m for m in st.session_state.admin_member_list if m['student_id'] != target_id]
+                                del st.session_state['delete_confirm_target_tab1']
+                                time.sleep(0.5)
+                                st.rerun()
+                            else:
+                                st.error(f"삭제 실패: {res.json().get('detail')}")
+                        except requests.exceptions.RequestException:
+                            st.error("서버 연결 실패")
+                with col_no:
+                    if st.button("❌ 취소", key="confirm_no_tab1"):
+                        del st.session_state['delete_confirm_target_tab1']
                         st.rerun()
-                    else:
-                        st.error(f"삭제 실패: {res.json().get('detail')}")
-                except:
-                    st.error("서버 오류")
 
     with tab2:
         uploaded_file = st.file_uploader("CSV 또는 Excel 파일 업로드 (학번, 이름, 소속동아리)", type=["csv", "xlsx"])
@@ -131,7 +143,7 @@ def show_admin_dashboard():
                     st.success("업로드 성공!")
                 else:
                     st.error(f"업로드 실패: {res.text}")
-            except:
+            except requests.exceptions.RequestException:
                 st.error("서버 연결 실패")
 
     with tab3:
@@ -152,7 +164,7 @@ def show_admin_dashboard():
                             st.success(f"✅ {new_name}({new_sid}) 등록 완료!")
                         else:
                             st.error(f"❌ 등록 실패: {res.json().get('detail')}")
-                    except:
+                    except requests.exceptions.RequestException:
                         st.error("서버 오류 발생")
                 else:
                     st.warning("모든 정보를 입력해주세요.")
@@ -172,7 +184,7 @@ def show_admin_dashboard():
                         st.success("소속 동아리가 변경되었습니다.")
                     else:
                         st.error(f"변경 실패: {res.json().get('detail')}")
-                except:
+                except requests.exceptions.RequestException:
                     st.error("서버 연결 실패")
             else:
                 st.warning("학번과 변경할 동아리 이름을 모두 입력해주세요.")
@@ -199,9 +211,31 @@ def show_admin_dashboard():
                     st.warning("초기화할 대상 학번을 입력해주세요.")
 
             if st.button("회원 영구 삭제", type="primary"):
-                res = requests.delete(f"{API_URL}/admin/members/{target_id}", headers=headers)
-                if res.status_code == 200: st.warning("삭제 완료")
-                else: st.error("삭제 실패")
+                if target_id:
+                    st.session_state['delete_confirm_target_tab4'] = target_id
+                else:
+                    st.warning("삭제할 대상 학번을 입력해주세요.")
+            
+            if st.session_state.get('delete_confirm_target_tab4'):
+                st.warning(f"정말 {st.session_state['delete_confirm_target_tab4']} 회원을 영구 삭제하시겠습니까?")
+                col_yes, col_no = st.columns(2)
+                with col_yes:
+                    if st.button("✅ 예, 삭제합니다", key="confirm_yes_tab4"):
+                        try:
+                            res = requests.delete(f"{API_URL}/admin/members/{st.session_state['delete_confirm_target_tab4']}", headers=headers)
+                            if res.status_code == 200: 
+                                st.success("삭제 완료")
+                                del st.session_state['delete_confirm_target_tab4']
+                                time.sleep(0.5)
+                                st.rerun()
+                            else: 
+                                st.error(f"삭제 실패: {res.json().get('detail')}")
+                        except requests.exceptions.RequestException:
+                            st.error("서버 연결 실패")
+                with col_no:
+                    if st.button("❌ 취소", key="confirm_no_tab4"):
+                        del st.session_state['delete_confirm_target_tab4']
+                        st.rerun()
 
 # 2. 디지털 회원증 페이지
 def show_membership_card():
