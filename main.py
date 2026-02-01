@@ -170,12 +170,12 @@ def read_all_members(db_session: Session = Depends(get_db), admin: Member = Depe
     """
     [관리자] 전체 회원 목록 조회
     """
-    return db_session.query(Member).all()
+    return db_session.query(Member).order_by(Member.club, Member.student_id).all()
 
 @app.post("/admin/upload-csv")
 async def upload_csv(file: UploadFile = File(...), db_session: Session = Depends(get_db), admin: Member = Depends(get_current_admin)):
     """
-    [관리자] CSV 또는 Excel 파일로 회원 일괄 등록 (형식: 학번,이름,소속동아리)
+    [관리자] CSV 또는 Excel 파일로 회원 일괄 등록 (형식: 이름,학번,소속동아리)
     """
     filename = file.filename.lower()
     rows = []
@@ -187,7 +187,8 @@ async def upload_csv(file: UploadFile = File(...), db_session: Session = Depends
         reader = csv.reader(decoded)
         for row in reader:
             if len(row) >= 3:
-                rows.append((row[0].strip(), row[1].strip(), row[2].strip()))
+                # 순서 변경: 이름(0), 학번(1), 소속동아리(2) -> (학번, 이름, 소속동아리)로 저장
+                rows.append((row[1].strip(), row[0].strip(), row[2].strip()))
     
     elif filename.endswith(".xlsx"):
         try:
@@ -196,8 +197,9 @@ async def upload_csv(file: UploadFile = File(...), db_session: Session = Depends
             for row in ws.iter_rows(values_only=True):
                 if row and len(row) >= 3:
                     # 데이터가 없는 경우 방지 및 문자열 변환
-                    sid = str(row[0]).strip() if row[0] is not None else ""
-                    name = str(row[1]).strip() if row[1] is not None else ""
+                    # 순서 변경: 이름(0), 학번(1), 소속동아리(2)
+                    name = str(row[0]).strip() if row[0] is not None else ""
+                    sid = str(row[1]).strip() if row[1] is not None else ""
                     club = str(row[2]).strip() if row[2] is not None else ""
                     if sid and name:
                         rows.append((sid, name, club))
