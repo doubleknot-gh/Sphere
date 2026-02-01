@@ -133,11 +133,27 @@ def show_login_page():
                         data={"username": student_id, "password": password}
                     )
                     if response.status_code == 200:
+                        token = response.json()['access_token']
+                        
+                        # 사용자 이름 가져오기 (환영 메시지용)
+                        user_name = ""
+                        try:
+                            headers = {"Authorization": f"Bearer {token}"}
+                            me_res = requests.get(f"{API_URL}/members/me", headers=headers)
+                            if me_res.status_code == 200:
+                                user_name = me_res.json()['name']
+                        except:
+                            pass
+
                         # 로그인 성공 애니메이션 (로고 확대 및 페이드아웃)
                         try:
                             with open("logo.png", "rb") as f:
                                 anim_logo = base64.b64encode(f.read()).decode()
                             
+                            welcome_html = ""
+                            if user_name:
+                                welcome_html = f"<h2 style='color: #E4D4A4; margin-top: 20px; font-size: 2rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.5); animation: fadeInUp 1s ease-out;'>환영합니다, {user_name}님!</h2>"
+
                             st.markdown(f"""
                                 <div style="
                                     position: fixed;
@@ -146,19 +162,21 @@ def show_login_page():
                                     background-color: #050A18;
                                     z-index: 999999;
                                     display: flex;
+                                    flex-direction: column;
                                     justify-content: center;
                                     align-items: center;
-                                    animation: fadeOutOverlay 1.5s forwards;
+                                    animation: fadeOutOverlay 2.5s forwards;
                                 ">
                                     <img src="data:image/png;base64,{anim_logo}" style="
                                         width: 200px;
-                                        animation: zoomOutLogo 1.2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+                                        animation: zoomOutLogo 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
                                     ">
+                                    {welcome_html}
                                 </div>
                                 <style>
                                     @keyframes zoomOutLogo {{
                                         0% {{ transform: scale(1); opacity: 1; }}
-                                        100% {{ transform: scale(30); opacity: 0; }}
+                                        100% {{ transform: scale(5); opacity: 0; }}
                                     }}
                                     @keyframes fadeOutOverlay {{
                                         0% {{ opacity: 1; }}
@@ -167,11 +185,11 @@ def show_login_page():
                                     }}
                                 </style>
                             """, unsafe_allow_html=True)
-                            time.sleep(1.0)
+                            time.sleep(2.0)
                         except:
                             pass
 
-                        st.session_state.token = response.json()['access_token']
+                        st.session_state.token = token
                         st.rerun() # 페이지를 다시 실행하여 회원증 페이지로 이동
                     else:
                         st.error("학번 또는 비밀번호가 일치하지 않습니다.")
