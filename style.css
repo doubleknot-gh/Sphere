@@ -218,48 +218,99 @@ input::placeholder {
 
 /* --- 관리자 대시보드 스타일 (프리미엄 다크 테마) --- */
 
-/* 탭 스타일 */
+/* 1. 사이드바 스타일링 */
+[data-testid="stSidebar"] {
+    background-color: #081020 !important;
+    border-right: 1px solid rgba(228, 212, 164, 0.1);
+}
+
+[data-testid="stSidebar"] .stMarkdown, [data-testid="stSidebar"] label, [data-testid="stSidebar"] h1 {
+    color: #F5EFE0 !important;
+}
+
+/* 2. 탭(Tabs) 스타일 개선 - 알약(Pill) 형태 */
 .stTabs [data-baseweb="tab-list"] {
-    gap: 8px;
+    gap: 10px;
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    border-radius: 16px;
+    margin-bottom: 20px;
 }
+
 .stTabs [data-baseweb="tab"] {
-    background-color: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
+    height: 45px;
+    border-radius: 10px;
+    background-color: transparent;
+    border: 1px solid transparent;
     color: #aaa;
-    border: none;
-    padding: 8px 16px;
     transition: all 0.3s ease;
+    flex: 1; /* 탭 너비 균등 분배 */
 }
+
 .stTabs [data-baseweb="tab"]:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.05);
     color: white;
 }
+
 .stTabs [aria-selected="true"] {
     background-color: #E4D4A4 !important;
     color: #050A18 !important;
     font-weight: bold;
-    box-shadow: 0 0 10px rgba(228, 212, 164, 0.3);
+    box-shadow: 0 4px 12px rgba(228, 212, 164, 0.3);
+    border: none;
 }
 
-/* 알림 박스 (st.info, st.success 등) */
+/* 3. 알림 박스 (st.info, st.success 등) */
 [data-testid="stAlert"] {
-    background-color: rgba(28, 33, 57, 0.8);
+    background-color: rgba(10, 25, 47, 0.8);
     border: 1px solid rgba(228, 212, 164, 0.3);
     color: #E4D4A4;
     border-radius: 12px;
 }
 
-/* 파일 업로더 */
+/* 4. 파일 업로더 */
 [data-testid="stFileUploader"] section {
     background-color: rgba(255, 255, 255, 0.03);
     border: 1px dashed rgba(228, 212, 164, 0.3);
     border-radius: 12px;
 }
 
-/* 셀렉트박스 */
+/* 5. 셀렉트박스 */
 .stSelectbox div[data-baseweb="select"] > div {
     background-color: rgba(10, 25, 47, 0.6) !important;
     color: #F5EFE0 !important;
     border: 1px solid rgba(228, 212, 164, 0.2) !important;
     border-radius: 12px !important;
+}
+
+/* 6. 데이터 테이블 (DataFrame/DataEditor) */
+[data-testid="stDataFrame"], [data-testid="stDataEditor"] {
+    background-color: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(228, 212, 164, 0.2);
+    border-radius: 12px;
+    padding: 5px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+/* 7. Expander (접이식 메뉴) */
+.streamlit-expanderHeader {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(228, 212, 164, 0.2) !important;
+    border-radius: 10px !important;
+    color: #F5EFE0 !important;
+    font-weight: 600;
+}
+
+.streamlit-expanderContent {
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(228, 212, 164, 0.1);
+    border-top: none;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    padding: 20px !important;
+}
+
+/* 8. 체크박스 */
+[data-testid="stCheckbox"] label {
+    color: #E4D4A4 !important;
 }
