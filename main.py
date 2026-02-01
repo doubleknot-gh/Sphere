@@ -8,6 +8,7 @@ import csv
 import codecs
 import os
 import io
+import zipfile
 from openpyxl import load_workbook
 
 from jose import JWTError, jwt
@@ -198,14 +199,21 @@ async def upload_csv(file: UploadFile = File(...), db_session: Session = Depends
                 if row and len(row) >= 3:
                     # 데이터가 없는 경우 방지 및 문자열 변환
                     # 입력 순서: 이름(0), 학번(1), 소속동아리(2)
-                    name = str(row[0]).strip() if row[0] is not None else ""
-                    sid = str(row[1]).strip() if row[1] is not None else ""
-                    club = str(row[2]).strip() if row[2] is not None else ""
+                    name_val = row[0]
+                    sid_val = row[1]
+                    club_val = row[2]
+                    
+                    name = str(name_val).strip() if name_val is not None else ""
+                    sid = str(sid_val).strip() if sid_val is not None else ""
+                    club = str(club_val).strip() if club_val is not None else ""
+                    
                     if sid and name:
                         rows.append((sid, name, club))
+        except zipfile.BadZipFile:
+            raise HTTPException(status_code=400, detail="엑셀 파일 형식이 올바르지 않습니다. (혹시 CSV 파일의 확장자만 .xlsx로 바꾸셨나요? 엑셀에서 '다른 이름으로 저장'을 통해 .xlsx로 저장해주세요.)")
         except Exception as e:
             print(f"Excel Error: {str(e)}") # 로그에 에러 출력
-            raise HTTPException(status_code=400, detail=f"엑셀 파일을 읽는 중 오류가 발생했습니다. 파일이 .xlsx 형식이 맞는지, 암호가 걸려있지 않은지 확인해주세요. (에러: {str(e)})")
+            raise HTTPException(status_code=400, detail=f"엑셀 처리 중 오류가 발생했습니다: {str(e)}")
     else:
         raise HTTPException(status_code=400, detail="지원하지 않는 파일 형식입니다. .csv 또는 .xlsx 파일을 사용해주세요.")
     
