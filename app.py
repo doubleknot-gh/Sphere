@@ -43,6 +43,8 @@ def add_particle_effect():
         top = random.uniform(0, 100)
         duration = random.uniform(10, 30)
         delay = random.uniform(-20, 0)
+        # 색상 랜덤 (흰색 또는 골드)
+        color = random.choice(["rgba(255, 255, 255, 0.5)", "rgba(228, 212, 164, 0.6)"])
         
         particles_html += f"""
         <div class="particle" style="
@@ -50,6 +52,8 @@ def add_particle_effect():
             height: {size}px;
             left: {left}vw;
             top: {top}vh;
+            background: {color};
+            box-shadow: 0 0 10px {color};
             animation-duration: {duration}s;
             animation-delay: {delay}s;
         "></div>
@@ -69,13 +73,12 @@ def add_particle_effect():
             .particle {{
                 position: absolute;
                 border-radius: 50%;
-                background: rgba(255, 255, 255, 0.5);
-                box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
                 animation: float infinite linear;
             }}
             @keyframes float {{
                 0% {{ transform: translateY(0) translateX(0); opacity: 0; }}
                 10% {{ opacity: 1; }}
+                50% {{ opacity: 0.4; }} /* 반짝이는 효과 추가 */
                 90% {{ opacity: 1; }}
                 100% {{ transform: translateY(-100vh) translateX(20px); opacity: 0; }}
             }}
@@ -105,7 +108,13 @@ def show_login_page():
         # 로고 중앙 정렬
         c1, c2, c3 = st.columns([1, 2, 1])
         with c2:
-            st.image(logo_image, use_container_width=True)
+            # 로고에 애니메이션 클래스 적용을 위해 HTML로 렌더링
+            try:
+                with open("logo.png", "rb") as f:
+                    encoded_logo = base64.b64encode(f.read()).decode()
+                    st.markdown(f'<img src="data:image/png;base64,{encoded_logo}" class="login-logo">', unsafe_allow_html=True)
+            except FileNotFoundError:
+                st.image(logo_image, use_container_width=True)
         
         st.markdown("<h1 style='text-align: center; margin-bottom: 40px;'>MEMBER LOGIN</h1>", unsafe_allow_html=True)
 
@@ -124,6 +133,44 @@ def show_login_page():
                         data={"username": student_id, "password": password}
                     )
                     if response.status_code == 200:
+                        # 로그인 성공 애니메이션 (로고 확대 및 페이드아웃)
+                        try:
+                            with open("logo.png", "rb") as f:
+                                anim_logo = base64.b64encode(f.read()).decode()
+                            
+                            st.markdown(f"""
+                                <div style="
+                                    position: fixed;
+                                    top: 0; left: 0;
+                                    width: 100vw; height: 100vh;
+                                    background-color: #050A18;
+                                    z-index: 999999;
+                                    display: flex;
+                                    justify-content: center;
+                                    align-items: center;
+                                    animation: fadeOutOverlay 1.5s forwards;
+                                ">
+                                    <img src="data:image/png;base64,{anim_logo}" style="
+                                        width: 200px;
+                                        animation: zoomOutLogo 1.2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+                                    ">
+                                </div>
+                                <style>
+                                    @keyframes zoomOutLogo {{
+                                        0% {{ transform: scale(1); opacity: 1; }}
+                                        100% {{ transform: scale(30); opacity: 0; }}
+                                    }}
+                                    @keyframes fadeOutOverlay {{
+                                        0% {{ opacity: 1; }}
+                                        70% {{ opacity: 1; }}
+                                        100% {{ opacity: 0; pointer-events: none; }}
+                                    }}
+                                </style>
+                            """, unsafe_allow_html=True)
+                            time.sleep(1.0)
+                        except:
+                            pass
+
                         st.session_state.token = response.json()['access_token']
                         st.rerun() # 페이지를 다시 실행하여 회원증 페이지로 이동
                     else:

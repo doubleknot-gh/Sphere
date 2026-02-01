@@ -285,6 +285,19 @@ input::placeholder {
     color: #E4D4A4 !important;
 }
 
+/* 로그인 로고 애니메이션 */
+.login-logo {
+    width: 100%;
+    height: auto;
+    animation: logoGlow 3s infinite ease-in-out;
+}
+
+@keyframes logoGlow {
+    0% { filter: drop-shadow(0 0 5px rgba(228, 212, 164, 0.2)); transform: scale(1); }
+    50% { filter: drop-shadow(0 0 25px rgba(228, 212, 164, 0.6)); transform: scale(1.02); }
+    100% { filter: drop-shadow(0 0 5px rgba(228, 212, 164, 0.2)); transform: scale(1); }
+}
+
 /* 2. 탭(Tabs) 스타일 개선 - 알약(Pill) 형태 */
 .stTabs [data-baseweb="tab-list"] {
     gap: 10px;
