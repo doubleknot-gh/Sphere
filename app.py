@@ -4,6 +4,7 @@ import requests
 import time
 import base64
 import os
+import io
 import pandas as pd
 from PIL import Image
 
@@ -149,21 +150,62 @@ def show_admin_dashboard():
                         st.rerun()
 
     with tab2:
-        uploaded_file = st.file_uploader("CSV 또는 Excel 파일 업로드 (이름, 학번, 소속동아리)", type=["csv", "xlsx"])
-        if uploaded_file and st.button("업로드 시작"):
-            files = {"file": (uploaded_file.name, uploaded_file.getvalue())}
+        st.info("엑셀 파일의 컬럼 순서가 달라도 아래에서 직접 지정하여 업로드할 수 있습니다.")
+        uploaded_file = st.file_uploader("명단 파일 업로드 (xlsx, csv)", type=["xlsx", "csv"])
+        
+        if uploaded_file:
             try:
-                res = requests.post(f"{API_URL}/admin/upload-csv", headers=headers, files=files)
-                if res.status_code == 200:
-                    st.success("업로드 성공!")
+                # 1. 파일 읽기 (Pandas 활용)
+                if uploaded_file.name.endswith('.csv'):
+                    df = pd.read_csv(uploaded_file)
                 else:
+                    df = pd.read_excel(uploaded_file)
+                
+                st.write("▼ 파일 미리보기 (상위 5개 행)")
+                st.dataframe(df.head(), use_container_width=True)
+                
+                # 2. 컬럼 매핑 UI
+                st.subheader("컬럼 연결 (Mapping)")
+                cols = df.columns.tolist()
+                
+                c1, c2, c3 = st.columns(3)
+                with c1:
+                    name_col = st.selectbox("이름이 있는 열", cols, index=0 if len(cols) > 0 else 0)
+                with c2:
+                    sid_col = st.selectbox("학번이 있는 열", cols, index=1 if len(cols) > 1 else 0)
+                with c3:
+                    club_col = st.selectbox("소속이 있는 열", cols, index=2 if len(cols) > 2 else 0)
+                
+                # 3. 업로드 버튼
+                if st.button("설정된 내용으로 업로드 시작", type="primary"):
+                    # 데이터 정제 (문자열 변환 및 소수점 제거)
+                    new_df = pd.DataFrame()
+                    new_df['name'] = df[name_col].astype(str).str.strip()
+                    # 학번이 숫자로 읽혔을 경우 .0 제거 로직
+                    new_df['sid'] = df[sid_col].apply(lambda x: str(int(x)) if pd.notnull(x) and isinstance(x, float) and x.is_integer() else str(x).strip())
+                    new_df['club'] = df[club_col].astype(str).str.strip()
+                    
+                    # CSV로 변환 (메모리 상에서 처리) - 백엔드는 (이름, 학번, 소속) 순서의 CSV를 기대함
+                    csv_buffer = io.StringIO()
+                    # 헤더 없이 데이터만 전송 (백엔드 로직 단순화)
+                    new_df.to_csv(csv_buffer, index=False, header=False)
+                    csv_bytes = csv_buffer.getvalue().encode('utf-8-sig')
+                    
+                    files = {"file": ("upload.csv", csv_bytes, "text/csv")}
+                    
                     try:
-                        err_msg = res.json().get('detail')
-                    except:
-                        err_msg = res.text
-                    st.error(f"업로드 실패: {err_msg}")
-            except requests.exceptions.RequestException:
-                st.error("서버 연결 실패")
+                        res = requests.post(f"{API_URL}/admin/upload-csv", headers=headers, files=files)
+                        if res.status_code == 200:
+                            st.success(f"업로드 성공! {res.json().get('message', '')}")
+                        else:
+                            try: err_msg = res.json().get('detail')
+                            except: err_msg = res.text
+                            st.error(f"업로드 실패: {err_msg}")
+                    except requests.exceptions.RequestException:
+                        st.error("서버 연결 실패")
+                        
+            except Exception as e:
+                st.error(f"파일을 읽는 중 오류가 발생했습니다: {e}")
 
     with tab3:
         st.subheader("신규 회원 직접 등록")
