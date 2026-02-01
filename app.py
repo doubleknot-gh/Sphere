@@ -98,7 +98,7 @@ def show_admin_dashboard():
     with tab2:
         uploaded_file = st.file_uploader("CSV 또는 Excel 파일 업로드 (학번, 이름, 소속동아리)", type=["csv", "xlsx"])
         if uploaded_file and st.button("업로드 시작"):
-            files = {"file": (uploaded_file.name, uploaded_file)}
+            files = {"file": (uploaded_file.name, uploaded_file.getvalue())}
             try:
                 res = requests.post(f"{API_URL}/admin/upload-csv", headers=headers, files=files)
                 if res.status_code == 200:

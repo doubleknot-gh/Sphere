@@ -190,16 +190,19 @@ async def upload_csv(file: UploadFile = File(...), db_session: Session = Depends
                 rows.append((row[0].strip(), row[1].strip(), row[2].strip()))
     
     elif filename.endswith(".xlsx"):
-        wb = load_workbook(io.BytesIO(content), data_only=True)
-        ws = wb.active
-        for row in ws.iter_rows(values_only=True):
-            if row and len(row) >= 3:
-                # 데이터가 없는 경우 방지 및 문자열 변환
-                sid = str(row[0]).strip() if row[0] is not None else ""
-                name = str(row[1]).strip() if row[1] is not None else ""
-                club = str(row[2]).strip() if row[2] is not None else ""
-                if sid and name:
-                    rows.append((sid, name, club))
+        try:
+            wb = load_workbook(io.BytesIO(content), data_only=True)
+            ws = wb.active
+            for row in ws.iter_rows(values_only=True):
+                if row and len(row) >= 3:
+                    # 데이터가 없는 경우 방지 및 문자열 변환
+                    sid = str(row[0]).strip() if row[0] is not None else ""
+                    name = str(row[1]).strip() if row[1] is not None else ""
+                    club = str(row[2]).strip() if row[2] is not None else ""
+                    if sid and name:
+                        rows.append((sid, name, club))
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"엑셀 파일을 읽을 수 없습니다. 파일이 손상되었거나 암호화되었는지 확인해주세요. ({str(e)})")
     else:
         raise HTTPException(status_code=400, detail="지원하지 않는 파일 형식입니다. .csv 또는 .xlsx 파일을 사용해주세요.")
     
