@@ -214,9 +214,17 @@ async def upload_csv(file: UploadFile = File(...), db_session: Session = Depends
                     sid_val = row[1]
                     club_val = row[2]
                     
-                    name = str(name_val).strip() if name_val is not None else ""
-                    sid = str(sid_val).strip() if sid_val is not None else ""
-                    club = str(club_val).strip() if club_val is not None else ""
+                    def clean_cell(val):
+                        if val is None: return ""
+                        s = str(val).strip()
+                        # 엑셀에서 숫자가 20241234.0 처럼 읽히는 경우 .0 제거
+                        if s.endswith('.0') and s.replace('.', '', 1).isdigit():
+                            return s[:-2]
+                        return s
+
+                    name = clean_cell(name_val)
+                    sid = clean_cell(sid_val)
+                    club = clean_cell(club_val)
                     
                     if sid and name:
                         rows.append((sid, name, club))
