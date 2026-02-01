@@ -223,7 +223,7 @@ div[data-testid="stForm"] .stButton > button p {
 div[data-testid="stForm"] .stButton > button:hover {
     background-color: #E4D4A4 !important; /* 호버 시 색상 변경 제거 */
     color: #050A18 !important;
-    border-color: #fff !important;
+    border-color: #E4D4A4 !important;
     transform: translateY(-3px) scale(1.02) !important;
     box-shadow: 0 0 30px rgba(228, 212, 164, 0.8) !important; /* 광채 강화 */
 }
