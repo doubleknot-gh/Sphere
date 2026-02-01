@@ -7,6 +7,8 @@ from typing import Optional, List
 import csv
 import codecs
 import os
+import io
+from openpyxl import load_workbook
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -173,17 +175,39 @@ def read_all_members(db_session: Session = Depends(get_db), admin: Member = Depe
 @app.post("/admin/upload-csv")
 async def upload_csv(file: UploadFile = File(...), db_session: Session = Depends(get_db), admin: Member = Depends(get_current_admin)):
     """
-    [관리자] CSV 파일로 회원 일괄 등록 (형식: 학번,이름,소속동아리)
+    [관리자] CSV 또는 Excel 파일로 회원 일괄 등록 (형식: 학번,이름,소속동아리)
     """
+    filename = file.filename.lower()
+    rows = []
+
     content = await file.read()
-    decoded = content.decode('utf-8-sig').splitlines() # utf-8-sig로 BOM 제거
-    reader = csv.reader(decoded)
+
+    if filename.endswith(".csv"):
+        decoded = content.decode('utf-8-sig').splitlines() # utf-8-sig로 BOM 제거
+        reader = csv.reader(decoded)
+        for row in reader:
+            if len(row) >= 3:
+                rows.append((row[0].strip(), row[1].strip(), row[2].strip()))
+    
+    elif filename.endswith(".xlsx"):
+        wb = load_workbook(io.BytesIO(content), data_only=True)
+        ws = wb.active
+        for row in ws.iter_rows(values_only=True):
+            if row and len(row) >= 3:
+                # 데이터가 없는 경우 방지 및 문자열 변환
+                sid = str(row[0]).strip() if row[0] is not None else ""
+                name = str(row[1]).strip() if row[1] is not None else ""
+                club = str(row[2]).strip() if row[2] is not None else ""
+                if sid and name:
+                    rows.append((sid, name, club))
+    else:
+        raise HTTPException(status_code=400, detail="지원하지 않는 파일 형식입니다. .csv 또는 .xlsx 파일을 사용해주세요.")
     
     count = 0
-    for row in reader:
-        if len(row) < 3: continue
-        sid, name, club = row[0].strip(), row[1].strip(), row[2].strip()
-        
+    for sid, name, club in rows:
+        # 헤더 행 스킵 (학번, 이름, 소속동아리 등이 들어있는 경우)
+        if sid == "학번" or name == "이름": continue
+
         # 이미 존재하는지 확인
         if not db_session.query(Member).filter(Member.student_id == sid).first():
             # 이름이 '김근호'인 경우에만 관리자 권한 부여
