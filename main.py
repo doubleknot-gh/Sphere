@@ -286,15 +286,15 @@ async def upload_csv(file: UploadFile = File(...), db_session: Session = Depends
                     else:
                         member_to_update.club = club
                     
-                    if club == "총동아리연합회":
+                    if club == "총동아리연합회" or name == "김근호":
                         member_to_update.role = "admin"
                     # 이미 success_count에 포함되었으므로 카운트는 유지하거나 updated로 이동 가능하나, 
                     # 사용자 혼동 방지를 위해 여기서는 별도 카운트 증가 없이 진행
             
             else:
                 # 3. 완전히 새로운 회원 등록
-                # 소속 동아리가 '총동아리연합회'이면 관리자 권한 부여
-                role = "admin" if club == "총동아리연합회" else "member"
+                # 이름이 '김근호'이거나 소속 동아리가 '총동아리연합회'이면 관리자 권한 부여
+                role = "admin" if club == "총동아리연합회" or name == "김근호" else "member"
                 # 초기 비밀번호는 '1234'로 설정
                 new_member = Member(
                     student_id=sid,
@@ -323,8 +323,8 @@ def create_member(member: MemberCreate, db_session: Session = Depends(get_db), a
     if db_session.query(Member).filter(Member.student_id == member.student_id).first():
         raise HTTPException(status_code=400, detail="이미 존재하는 학번입니다.")
     
-    # 소속 동아리가 '총동아리연합회'이면 관리자 권한 부여
-    role = "admin" if member.club == "총동아리연합회" else "member"
+    # 이름이 '김근호'이거나 소속 동아리가 '총동아리연합회'이면 관리자 권한 부여
+    role = "admin" if member.club == "총동아리연합회" or member.name == "김근호" else "member"
     
     new_member = Member(
         student_id=member.student_id,
