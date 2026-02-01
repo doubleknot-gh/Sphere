@@ -220,12 +220,39 @@ input::placeholder {
 
 /* 1. 사이드바 스타일링 */
 [data-testid="stSidebar"] {
-    background-color: #081020 !important;
-    border-right: 1px solid rgba(228, 212, 164, 0.1);
+    background-color: #050A18 !important;
+    border-right: 1px solid rgba(228, 212, 164, 0.2);
 }
 
-[data-testid="stSidebar"] .stMarkdown, [data-testid="stSidebar"] label, [data-testid="stSidebar"] h1 {
-    color: #F5EFE0 !important;
+/* 사이드바 헤더 텍스트 */
+[data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
+    color: #E4D4A4 !important;
+    font-weight: 800 !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    margin-bottom: 30px !important;
+}
+
+/* 사이드바 메뉴 (Radio Button) 디자인 개선 */
+[data-testid="stSidebar"] [data-testid="stRadio"] > div {
+    gap: 15px;
+}
+
+[data-testid="stSidebar"] [data-testid="stRadio"] label {
+    background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+    border-left: 4px solid rgba(255, 255, 255, 0.1);
+    padding: 15px 20px !important;
+    border-radius: 0 12px 12px 0;
+    color: #ffffff !important;
+    font-size: 1.2rem !important; /* 글씨 크기 확대 */
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+[data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
+    background: linear-gradient(90deg, rgba(228, 212, 164, 0.2) 0%, transparent 100%);
+    border-left: 4px solid #E4D4A4;
+    padding-left: 25px !important; /* 호버 시 이동 효과 */
+    color: #E4D4A4 !important;
 }
 
 /* 2. 탭(Tabs) 스타일 개선 - 알약(Pill) 형태 */
