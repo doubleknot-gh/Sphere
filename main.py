@@ -236,15 +236,56 @@ async def upload_csv(file: UploadFile = File(...), db_session: Session = Depends
     else:
         raise HTTPException(status_code=400, detail="지원하지 않는 파일 형식입니다. .csv 또는 .xlsx 파일을 사용해주세요.")
     
+    success_count = 0
+    updated_count = 0
+    skip_count = 0
+    
+    # [중요] 이번 요청에서 새로 추가된 회원을 임시 저장 (파일 내 중복 방지)
+    new_members_cache = {}
+
     try:
-        count = 0
         for sid, name, club in rows:
             # 헤더 행 스킵 (학번이나 이름 자리에 제목이 들어있는 경우 건너뜀)
             # 예: '학번', 'Student ID', '이름', 'Name', '성명' 등이 포함되면 헤더로 간주
             if any(header in sid for header in ["학번", "Student", "ID", "id"]) or any(header in name for header in ["이름", "Name", "성명"]): continue
 
-            # 이미 존재하는지 확인
-            if not db_session.query(Member).filter(Member.student_id == sid).first():
+            # 1. DB에 이미 존재하는지 확인
+            existing_member = db_session.query(Member).filter(Member.student_id == sid).first()
+
+            if existing_member:
+                # 이미 존재하는 경우: 소속 동아리 추가 (중복되지 않게)
+                current_clubs = [c.strip() for c in (existing_member.club or "").split(',')]
+                if club and club not in current_clubs:
+                    if existing_member.club:
+                        existing_member.club += f", {club}"
+                    else:
+                        existing_member.club = club
+                    
+                    # 총동아리연합회가 추가되면 관리자 권한 부여
+                    if club == "총동아리연합회":
+                        existing_member.role = "admin"
+                    
+                    updated_count += 1
+                else:
+                    skip_count += 1 # 이미 해당 동아리가 있거나 변경사항 없음
+            
+            # 2. DB에는 없지만, 이번 파일 업로드로 방금 추가된 회원인지 확인 (캐시 확인)
+            elif sid in new_members_cache:
+                member_to_update = new_members_cache[sid]
+                current_clubs = [c.strip() for c in (member_to_update.club or "").split(',')]
+                if club and club not in current_clubs:
+                    if member_to_update.club:
+                        member_to_update.club += f", {club}"
+                    else:
+                        member_to_update.club = club
+                    
+                    if club == "총동아리연합회":
+                        member_to_update.role = "admin"
+                    # 이미 success_count에 포함되었으므로 카운트는 유지하거나 updated로 이동 가능하나, 
+                    # 사용자 혼동 방지를 위해 여기서는 별도 카운트 증가 없이 진행
+            
+            else:
+                # 3. 완전히 새로운 회원 등록
                 # 소속 동아리가 '총동아리연합회'이면 관리자 권한 부여
                 role = "admin" if club == "총동아리연합회" else "member"
                 # 초기 비밀번호는 '1234'로 설정
@@ -257,10 +298,11 @@ async def upload_csv(file: UploadFile = File(...), db_session: Session = Depends
                     status=MemberStatus.active
                 )
                 db_session.add(new_member)
-                count += 1
+                new_members_cache[sid] = new_member # 캐시에 등록
+                success_count += 1
         
         db_session.commit()
-        return {"message": f"{count}명의 회원이 등록되었습니다."}
+        return {"message": f"신규 {success_count}명 등록, {updated_count}명 정보 업데이트 (변경없음 {skip_count}명)"}
     except Exception as e:
         db_session.rollback()
         print(f"Upload Error: {str(e)}")
