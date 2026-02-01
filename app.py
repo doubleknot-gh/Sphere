@@ -101,6 +101,9 @@ def show_login_page():
     # 배경 파티클 효과 적용
     add_particle_effect()
     
+    # [수정] 애니메이션을 위한 빈 공간 확보 (폼 바깥쪽)
+    animation_placeholder = st.empty()
+    
     # 화면 중앙 정렬을 위한 컬럼 분할
     col1, col2, col3 = st.columns([1, 1.2, 1])
     
@@ -154,37 +157,39 @@ def show_login_page():
                             if user_name:
                                 welcome_html = f"<h2 style='color: #E4D4A4; margin-top: 20px; font-size: 2rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.5); animation: fadeInUp 1s ease-out;'>환영합니다, {user_name}님!</h2>"
 
-                            st.markdown(f"""
-                                <div style="
-                                    position: fixed;
-                                    top: 0; left: 0;
-                                    width: 100vw; height: 100vh;
-                                    background-color: #050A18;
-                                    z-index: 999999;
-                                    display: flex;
-                                    flex-direction: column;
-                                    justify-content: center;
-                                    align-items: center;
-                                    animation: fadeOutOverlay 2.5s forwards;
-                                ">
-                                    <img src="data:image/png;base64,{anim_logo}" style="
-                                        width: 200px;
-                                        animation: zoomOutLogo 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+                            # [수정] 폼 내부가 아닌 외부 placeholder에 애니메이션 렌더링
+                            with animation_placeholder:
+                                st.markdown(f"""
+                                    <div style="
+                                        position: fixed;
+                                        top: 0; left: 0;
+                                        width: 100vw; height: 100vh;
+                                        background-color: #050A18;
+                                        z-index: 999999;
+                                        display: flex;
+                                        flex-direction: column;
+                                        justify-content: center;
+                                        align-items: center;
+                                        animation: fadeOutOverlay 2.5s forwards;
                                     ">
-                                    {welcome_html}
-                                </div>
-                                <style>
-                                    @keyframes zoomOutLogo {{
-                                        0% {{ transform: scale(1); opacity: 1; }}
-                                        100% {{ transform: scale(5); opacity: 0; }}
-                                    }}
-                                    @keyframes fadeOutOverlay {{
-                                        0% {{ opacity: 1; }}
-                                        70% {{ opacity: 1; }}
-                                        100% {{ opacity: 0; pointer-events: none; }}
-                                    }}
-                                </style>
-                            """, unsafe_allow_html=True)
+                                        <img src="data:image/png;base64,{anim_logo}" style="
+                                            width: 200px;
+                                            animation: zoomOutLogo 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+                                        ">
+                                        {welcome_html}
+                                    </div>
+                                    <style>
+                                        @keyframes zoomOutLogo {{
+                                            0% {{ transform: scale(1); opacity: 1; }}
+                                            100% {{ transform: scale(5); opacity: 0; }}
+                                        }}
+                                        @keyframes fadeOutOverlay {{
+                                            0% {{ opacity: 1; }}
+                                            70% {{ opacity: 1; }}
+                                            100% {{ opacity: 0; pointer-events: none; }}
+                                        }}
+                                    </style>
+                                """, unsafe_allow_html=True)
                             time.sleep(2.0)
                         except:
                             pass
