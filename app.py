@@ -7,6 +7,7 @@ import os
 import io
 import random
 import pandas as pd
+from datetime import datetime
 from PIL import Image
 
 # --- 기본 설정 ---
@@ -206,14 +207,30 @@ def show_admin_dashboard():
     st.title("🛡️ 관리자 대시보드")
     st.info(f"관리자: {st.session_state.member_info['name']}님 접속 중")
     
-    # 탭으로 기능 분리
-    tab1, tab2, tab3, tab4 = st.tabs(["👥 전체 회원 조회", "📂 명단 일괄 등록", "➕ 신규 회원 등록", "⚙️ 개별 회원 관리"])
     headers = {"Authorization": f"Bearer {st.session_state.token}"}
 
-    with tab1:
-        if 'admin_member_list' not in st.session_state:
-            st.session_state.admin_member_list = []
+    # [기능 추가] 데이터 자동 로드 및 통계 위젯 표시
+    if 'admin_member_list' not in st.session_state or not st.session_state.admin_member_list:
+        try:
+            res = requests.get(f"{API_URL}/admin/members", headers=headers)
+            if res.status_code == 200:
+                st.session_state.admin_member_list = res.json()
+        except:
+            pass
+            
+    if st.session_state.get('admin_member_list'):
+        df_stats = pd.DataFrame(st.session_state.admin_member_list)
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("총 회원 수", f"{len(df_stats)}명")
+        c2.metric("활동 회원", f"{len(df_stats[df_stats['status'] == 'active'])}명")
+        c3.metric("관리자", f"{len(df_stats[df_stats['role'] == 'admin'])}명")
+        c4.metric("등록 동아리", f"{df_stats['club'].nunique()}개")
+        st.markdown("---")
 
+    # 탭으로 기능 분리
+    tab1, tab2, tab3, tab4 = st.tabs(["👥 전체 회원 조회", "📂 명단 일괄 등록", "➕ 신규 회원 등록", "⚙️ 개별 회원 관리"])
+
+    with tab1:
         if st.button("회원 목록 새로고침"):
             try:
                 res = requests.get(f"{API_URL}/admin/members", headers=headers)
@@ -225,13 +242,32 @@ def show_admin_dashboard():
                 st.error("서버 연결 실패")
         
         if st.session_state.admin_member_list:
-            # 데이터프레임 변환 및 선택 컬럼 추가
+            # 데이터프레임 생성
             df = pd.DataFrame(st.session_state.admin_member_list)
-            df.insert(0, "선택", False)
+
+            # [기능 추가] 동아리 필터링
+            all_clubs = sorted([x for x in df['club'].unique() if x])
+            selected_clubs = st.multiselect("동아리별 보기", options=all_clubs, placeholder="전체 동아리")
+            
+            if selected_clubs:
+                df = df[df['club'].isin(selected_clubs)]
+
+            # [기능 추가] 엑셀(CSV) 다운로드 버튼 (필터링된 결과 반영)
+            csv = df.to_csv(index=False).encode('utf-8-sig')
+            st.download_button(
+                label="📥 회원 명단 다운로드 (CSV)",
+                data=csv,
+                file_name=f"members_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv"
+            )
+
+            # 선택 컬럼 추가 (화면 표시용)
+            df_display = df.copy()
+            df_display.insert(0, "선택", False)
             
             # 데이터 에디터로 출력 (체크박스 기능)
             edited_df = st.data_editor(
-                df,
+                df_display,
                 column_config={
                     "선택": st.column_config.CheckboxColumn("선택", default=False)
                 },
