@@ -37,7 +37,7 @@ local_css("style.css")
 # --- 파티클 배경 효과 (CSS + Python) ---
 def add_particle_effect():
     particles_html = ""
-    for _ in range(50):
+    for _ in range(30): # 파티클 개수 최적화 (50 -> 30)
         size = random.uniform(1, 4)
         left = random.uniform(0, 100)
         top = random.uniform(0, 100)
@@ -170,11 +170,11 @@ def show_login_page():
                                         flex-direction: column;
                                         justify-content: center;
                                         align-items: center;
-                                        animation: fadeOutOverlay 2.5s forwards;
+                                        animation: fadeOutOverlay 1.5s forwards; /* 2.5s -> 1.5s 단축 */
                                     ">
                                         <img src="data:image/png;base64,{anim_logo}" style="
                                             width: 200px;
-                                            animation: zoomOutLogo 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+                                            animation: zoomOutLogo 1.0s cubic-bezier(0.19, 1, 0.22, 1) forwards; /* 1.5s -> 1.0s 단축 */
                                         ">
                                         {welcome_html}
                                     </div>
@@ -190,7 +190,7 @@ def show_login_page():
                                         }}
                                     </style>
                                 """, unsafe_allow_html=True)
-                            time.sleep(2.0)
+                            time.sleep(1.2) # 대기 시간 2.0s -> 1.2s 단축
                         except:
                             pass
 
@@ -266,7 +266,7 @@ def show_admin_dashboard():
                         st.success(f"{success_cnt}명 삭제 완료.")
                         st.session_state.admin_member_list = [m for m in st.session_state.admin_member_list if m['student_id'] not in targets]
                         del st.session_state['delete_confirm_targets']
-                        time.sleep(1)
+                        time.sleep(0.5) # 삭제 후 대기 시간 단축
                         st.rerun()
                 with col_no:
                     if st.button("❌ 취소", key="confirm_no_bulk"):
@@ -440,7 +440,7 @@ def show_admin_dashboard():
                             if res.status_code == 200: 
                                 st.success("삭제 완료")
                                 del st.session_state['delete_confirm_target_tab4']
-                                time.sleep(0.5)
+                                time.sleep(0.3) # 삭제 후 대기 시간 단축
                                 st.rerun()
                             else: 
                                 st.error(f"삭제 실패: {res.json().get('detail')}")
