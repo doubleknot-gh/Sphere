@@ -156,7 +156,7 @@ def show_login_page():
                             
                             welcome_html = ""
                             if user_name:
-                                welcome_html = f"<h2 style='color: #E4D4A4; margin-top: 20px; font-size: 2rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.5); animation: fadeInUp 1s ease-out;'>환영합니다, {user_name}님!</h2>"
+                                welcome_html = f"<h2 style='color: #E4D4A4; margin-top: 20px; font-size: 2rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.5); animation: fadeInUp 0.5s ease-out;'>환영합니다, {user_name}님!</h2>"
 
                             # [수정] 폼 내부가 아닌 외부 placeholder에 애니메이션 렌더링
                             with animation_placeholder:
@@ -171,11 +171,11 @@ def show_login_page():
                                         flex-direction: column;
                                         justify-content: center;
                                         align-items: center;
-                                        animation: fadeOutOverlay 1.5s forwards; /* 2.5s -> 1.5s 단축 */
+                                        animation: fadeOutOverlay 0.8s forwards; /* 1.5s -> 0.8s 단축 */
                                     ">
                                         <img src="data:image/png;base64,{anim_logo}" style="
                                             width: 200px;
-                                            animation: zoomOutLogo 1.0s cubic-bezier(0.19, 1, 0.22, 1) forwards; /* 1.5s -> 1.0s 단축 */
+                                            animation: zoomOutLogo 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards; /* 1.0s -> 0.6s 단축 */
                                         ">
                                         {welcome_html}
                                     </div>
@@ -191,7 +191,7 @@ def show_login_page():
                                         }}
                                     </style>
                                 """, unsafe_allow_html=True)
-                            time.sleep(1.2) # 대기 시간 2.0s -> 1.2s 단축
+                            time.sleep(0.7) # 대기 시간 1.2s -> 0.7s 단축
                         except:
                             pass
 
