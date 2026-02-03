@@ -384,3 +384,26 @@ input::placeholder {
 [data-testid="stCheckbox"] label {
     color: #E4D4A4 !important;
 }
+
+/* 9. 통계 위젯 (Metric) 스타일 */
+[data-testid="stMetric"] {
+    background-color: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(228, 212, 164, 0.1);
+    border-radius: 12px;
+    padding: 15px;
+    transition: all 0.3s ease;
+}
+
+[data-testid="stMetric"]:hover {
+    transform: scale(1.05);
+    background-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    border-color: rgba(228, 212, 164, 0.3);
+}
+
+[data-testid="stMetricLabel"] {
+    color: #E4D4A4 !important;
+}
+[data-testid="stMetricValue"] {
+    color: #FFFFFF !important;
+}
