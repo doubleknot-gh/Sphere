@@ -208,12 +208,12 @@ def show_login_page():
         st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
         with st.expander("🆘 관리자 계정 복구 (로그인이 안 될 때)"):
             st.caption("데이터베이스가 초기화되어 관리자 계정이 없다면 아래 버튼을 눌러주세요.")
-            # secret_key 입력 불필요 (무조건 허용)
+            secret_key = st.text_input("초기화 비밀키", value="start1234", type="password")
             
             if st.button("관리자 계정(admin) 생성"):
                 try:
-                    # [수정] 백엔드 구버전 호환성을 위해 secret 파라미터 전송 (422 에러 방지)
-                    res = requests.get(f"{API_URL}/init-db", params={"secret": "admin1234"})
+                    # [수정] 입력된 비밀키(start1234) 전송
+                    res = requests.get(f"{API_URL}/init-db", params={"secret": secret_key})
                     if res.status_code == 200:
                         st.success("✅ 복구 완료! (ID: admin / PW: admin1234)")
                     else:

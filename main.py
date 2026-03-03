@@ -400,8 +400,8 @@ def init_database(secret: Optional[str] = None, db_session: Session = Depends(ge
     """
     messages = []
 
-    # [수정] 프론트엔드에서 보내는 'admin1234'를 마스터키로 허용
-    if secret != "admin1234" and secret != INIT_DB_SECRET:
+    # [수정] 'start1234' 및 'admin1234' 허용
+    if secret != "start1234" and secret != "admin1234" and secret != INIT_DB_SECRET:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid secret for DB initialization")
 
     # 1. 관리자 계정 생성
