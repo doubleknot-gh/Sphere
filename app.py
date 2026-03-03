@@ -603,6 +603,11 @@ def show_membership_card():
 
     # 회원증 카드 UI (세련된 신용카드 스타일)
     st.markdown(f"""
+        <style>
+            .membership-card {{
+                max-width: 600px !important; /* 카드 너비 확대 (글자 잘림 방지) */
+            }}
+        </style>
         <div class="membership-card">
             <div class="card-header">
                 <div class="card-chip"></div>
