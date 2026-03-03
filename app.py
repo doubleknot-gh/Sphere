@@ -204,23 +204,6 @@ def show_login_page():
                     except requests.exceptions.ConnectionError:
                         st.error("백엔드 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.")
 
-        # [추가] DB 초기화 및 관리자 계정 복구 기능
-        st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
-        with st.expander("🆘 관리자 계정 복구 (로그인이 안 될 때)"):
-            st.caption("데이터베이스가 초기화되어 관리자 계정이 없다면 아래 버튼을 눌러주세요.")
-            secret_key = st.text_input("초기화 비밀키", value="start1234", type="password")
-            
-            if st.button("관리자 계정(admin) 생성"):
-                try:
-                    # [수정] 입력된 비밀키(start1234) 전송
-                    res = requests.get(f"{API_URL}/init-db", params={"secret": secret_key})
-                    if res.status_code == 200:
-                        st.success("✅ 복구 완료! (ID: admin / PW: admin1234)")
-                    else:
-                        # 에러 원인을 상세히 출력
-                        st.error(f"실패 (코드 {res.status_code}): {res.text}")
-                except Exception as e:
-                    st.error(f"서버 연결 실패: {e}")
 
 # 1.5 관리자 대시보드 (신규 추가)
 def show_admin_dashboard():
