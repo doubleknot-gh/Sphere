@@ -359,6 +359,19 @@ def update_member_club(student_id: str, club: str, db_session: Session = Depends
     db_session.commit()
     return {"message": "소속 동아리 변경 완료"}
 
+@app.patch("/admin/members/{student_id}/id")
+def update_member_id(student_id: str, new_id: str, db_session: Session = Depends(get_db), admin: Member = Depends(get_current_admin)):
+    if db_session.query(Member).filter(Member.student_id == new_id).first():
+        raise HTTPException(status_code=400, detail="이미 존재하는 학번입니다.")
+    
+    user = db_session.query(Member).filter(Member.student_id == student_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.student_id = new_id
+    db_session.commit()
+    return {"message": "학번 변경 완료"}
+
 @app.patch("/admin/members/{student_id}/role")
 def update_member_role(student_id: str, role: str, db_session: Session = Depends(get_db), admin: Member = Depends(get_current_admin)):
     user = db_session.query(Member).filter(Member.student_id == student_id).first()

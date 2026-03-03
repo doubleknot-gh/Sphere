@@ -377,6 +377,12 @@ def show_admin_dashboard():
                         res = requests.post(f"{API_URL}/admin/upload-csv", headers=headers, files=files)
                         if res.status_code == 200:
                             st.success(f"업로드 성공! {res.json().get('message', '')}")
+                        elif res.status_code == 401:
+                            st.error("세션이 만료되었습니다. 다시 로그인해주세요.")
+                            st.session_state.token = None
+                            st.session_state.member_info = None
+                            time.sleep(1)
+                            st.rerun()
                         else:
                             try: err_msg = res.json().get('detail')
                             except: err_msg = res.text
@@ -403,6 +409,12 @@ def show_admin_dashboard():
                         res = requests.post(f"{API_URL}/admin/members", headers=headers, json={"student_id": new_sid, "name": new_name, "club": new_club})
                         if res.status_code == 200:
                             st.success(f"✅ {new_name}({new_sid}) 등록 완료!")
+                        elif res.status_code == 401:
+                            st.error("세션이 만료되었습니다. 다시 로그인해주세요.")
+                            st.session_state.token = None
+                            st.session_state.member_info = None
+                            time.sleep(1)
+                            st.rerun()
                         else:
                             st.error(f"❌ 등록 실패: {res.json().get('detail')}")
                     except requests.exceptions.RequestException:
@@ -437,12 +449,44 @@ def show_admin_dashboard():
                                          headers=headers, params={"club": new_club_name})
                     if res.status_code == 200:
                         st.success("소속 동아리가 변경되었습니다.")
+                    elif res.status_code == 401:
+                        st.error("세션이 만료되었습니다. 다시 로그인해주세요.")
+                        st.session_state.token = None
+                        st.session_state.member_info = None
+                        time.sleep(1)
+                        st.rerun()
                     else:
                         st.error(f"변경 실패: {res.json().get('detail')}")
                 except requests.exceptions.RequestException:
                     st.error("서버 연결 실패")
             else:
                 st.warning("학번과 변경할 동아리 이름을 모두 입력해주세요.")
+
+        st.markdown("---")
+        st.subheader("학번 변경")
+        new_sid_input = st.text_input("변경할 새로운 학번", placeholder="예: 20250001")
+        if st.button("학번 변경 적용"):
+            if target_id and new_sid_input:
+                try:
+                    res = requests.patch(f"{API_URL}/admin/members/{target_id}/id", 
+                                         headers=headers, params={"new_id": new_sid_input})
+                    if res.status_code == 200:
+                        st.success(f"학번이 '{new_sid_input}'로 변경되었습니다.")
+                        st.session_state.admin_member_list = None # 목록 갱신 유도
+                        time.sleep(1)
+                        st.rerun()
+                    elif res.status_code == 401:
+                        st.error("세션이 만료되었습니다. 다시 로그인해주세요.")
+                        st.session_state.token = None
+                        st.session_state.member_info = None
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error(f"변경 실패: {res.json().get('detail')}")
+                except requests.exceptions.RequestException:
+                    st.error("서버 연결 실패")
+            else:
+                st.warning("변경할 학번을 입력해주세요.")
 
         st.markdown("---")
         st.subheader("계정 상태 및 관리")
@@ -455,6 +499,14 @@ def show_admin_dashboard():
                     res = requests.patch(f"{API_URL}/admin/members/{target_id}/role", 
                                          headers=headers, params={"role": new_role})
                     if res.status_code == 200: st.success(f"권한이 '{new_role}'로 변경되었습니다.")
+                    if res.status_code == 200: 
+                        st.success(f"권한이 '{new_role}'로 변경되었습니다.")
+                    elif res.status_code == 401:
+                        st.error("세션이 만료되었습니다. 다시 로그인해주세요.")
+                        st.session_state.token = None
+                        st.session_state.member_info = None
+                        time.sleep(1)
+                        st.rerun()
                     else: st.error(f"변경 실패: {res.json().get('detail')}")
                 except requests.exceptions.RequestException:
                     st.error("서버 연결 실패")
@@ -468,6 +520,10 @@ def show_admin_dashboard():
                 res = requests.patch(f"{API_URL}/admin/members/{target_id}/status", 
                                      headers=headers, params={"status": new_status})
                 if res.status_code == 200: st.success("변경 완료")
+                elif res.status_code == 401:
+                    st.session_state.token = None
+                    st.session_state.member_info = None
+                    st.rerun()
                 else: st.error("변경 실패")
         with col2:
             if st.button("비밀번호 초기화 ('1234')"):
@@ -475,6 +531,10 @@ def show_admin_dashboard():
                     res = requests.patch(f"{API_URL}/admin/members/{target_id}/reset-password", headers=headers)
                     if res.status_code == 200:
                         st.success(f"{target_id}의 비밀번호가 '1234'로 초기화되었습니다.")
+                    elif res.status_code == 401:
+                        st.session_state.token = None
+                        st.session_state.member_info = None
+                        st.rerun()
                     else:
                         st.error(f"초기화 실패: {res.json().get('detail')}")
                 else:
@@ -497,6 +557,10 @@ def show_admin_dashboard():
                                 st.success("삭제 완료")
                                 del st.session_state['delete_confirm_target_tab4']
                                 time.sleep(0.3) # 삭제 후 대기 시간 단축
+                                st.rerun()
+                            elif res.status_code == 401:
+                                st.session_state.token = None
+                                st.session_state.member_info = None
                                 st.rerun()
                             else: 
                                 st.error(f"삭제 실패: {res.json().get('detail')}")
