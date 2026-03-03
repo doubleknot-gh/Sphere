@@ -131,74 +131,76 @@ def show_login_page():
             submitted = st.form_submit_button("로그인")
 
             if submitted:
-                try:
-                    response = requests.post(
-                        f"{API_URL}/token",
-                        data={"username": student_id, "password": password}
-                    )
-                    if response.status_code == 200:
-                        token = response.json()['access_token']
-                        
-                        # 사용자 이름 가져오기 (환영 메시지용)
-                        user_name = ""
-                        try:
-                            headers = {"Authorization": f"Bearer {token}"}
-                            me_res = requests.get(f"{API_URL}/members/me", headers=headers)
-                            if me_res.status_code == 200:
-                                user_name = me_res.json()['name']
-                        except:
-                            pass
-
-                        # 로그인 성공 애니메이션 (로고 확대 및 페이드아웃)
-                        try:
-                            with open("logo.png", "rb") as f:
-                                anim_logo = base64.b64encode(f.read()).decode()
+                # [UX 개선] 서버 응답 대기 중 로딩 표시 추가
+                with st.spinner("서버에 접속 중입니다... (무료 서버가 깨어나는 데 최대 1분 소요될 수 있습니다)"):
+                    try:
+                        response = requests.post(
+                            f"{API_URL}/token",
+                            data={"username": student_id, "password": password}
+                        )
+                        if response.status_code == 200:
+                            token = response.json()['access_token']
                             
-                            welcome_html = ""
-                            if user_name:
-                                welcome_html = f"<h2 style='color: #E4D4A4; margin-top: 20px; font-size: 2rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.5); animation: fadeInUp 0.5s ease-out;'>환영합니다, {user_name}님!</h2>"
+                            # 사용자 이름 가져오기 (환영 메시지용)
+                            user_name = ""
+                            try:
+                                headers = {"Authorization": f"Bearer {token}"}
+                                me_res = requests.get(f"{API_URL}/members/me", headers=headers)
+                                if me_res.status_code == 200:
+                                    user_name = me_res.json()['name']
+                            except:
+                                pass
 
-                            # [수정] 폼 내부가 아닌 외부 placeholder에 애니메이션 렌더링
-                            with animation_placeholder:
-                                st.markdown(f"""
-                                    <div style="
-                                        position: fixed;
-                                        top: 0; left: 0;
-                                        width: 100vw; height: 100vh;
-                                        background-color: #050A18;
-                                        z-index: 999999;
-                                        display: flex;
-                                        flex-direction: column;
-                                        justify-content: center;
-                                        align-items: center;
-                                        animation: fadeOutOverlay 0.8s forwards; /* 1.5s -> 0.8s 단축 */
-                                    ">
-                                        <img src="data:image/png;base64,{anim_logo}" style="
-                                            width: 200px;
-                                            animation: zoomOutLogo 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards; /* 1.0s -> 0.6s 단축 */
+                            # 로그인 성공 애니메이션 (로고 확대 및 페이드아웃)
+                            try:
+                                with open("logo.png", "rb") as f:
+                                    anim_logo = base64.b64encode(f.read()).decode()
+                                
+                                welcome_html = ""
+                                if user_name:
+                                    welcome_html = f"<h2 style='color: #E4D4A4; margin-top: 20px; font-size: 2rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.5); animation: fadeInUp 0.5s ease-out;'>환영합니다, {user_name}님!</h2>"
+
+                                # [수정] 폼 내부가 아닌 외부 placeholder에 애니메이션 렌더링
+                                with animation_placeholder:
+                                    st.markdown(f"""
+                                        <div style="
+                                            position: fixed;
+                                            top: 0; left: 0;
+                                            width: 100vw; height: 100vh;
+                                            background-color: #050A18;
+                                            z-index: 999999;
+                                            display: flex;
+                                            flex-direction: column;
+                                            justify-content: center;
+                                            align-items: center;
+                                            animation: fadeOutOverlay 0.8s forwards; /* 1.5s -> 0.8s 단축 */
                                         ">
-                                        {welcome_html}
-                                    </div>
-                                    <style>
-                                        @keyframes zoomOutLogo {{
-                                            0% {{ transform: scale(1); opacity: 1; }}
-                                            100% {{ transform: scale(5); opacity: 0; }}
-                                        }}
-                                        @keyframes fadeOutOverlay {{
-                                            0% {{ opacity: 1; }}
-                                            70% {{ opacity: 1; }}
-                                            100% {{ opacity: 0; pointer-events: none; }}
-                                        }}
-                                    </style>
-                                """, unsafe_allow_html=True)
-                            time.sleep(0.7) # 대기 시간 1.2s -> 0.7s 단축
-                        except:
-                            pass
+                                            <img src="data:image/png;base64,{anim_logo}" style="
+                                                width: 200px;
+                                                animation: zoomOutLogo 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards; /* 1.0s -> 0.6s 단축 */
+                                            ">
+                                            {welcome_html}
+                                        </div>
+                                        <style>
+                                            @keyframes zoomOutLogo {{
+                                                0% {{ transform: scale(1); opacity: 1; }}
+                                                100% {{ transform: scale(5); opacity: 0; }}
+                                            }}
+                                            @keyframes fadeOutOverlay {{
+                                                0% {{ opacity: 1; }}
+                                                70% {{ opacity: 1; }}
+                                                100% {{ opacity: 0; pointer-events: none; }}
+                                            }}
+                                        </style>
+                                    """, unsafe_allow_html=True)
+                                time.sleep(0.7) # 대기 시간 1.2s -> 0.7s 단축
+                            except:
+                                pass
 
-                        st.session_state.token = token
-                        st.rerun() # 페이지를 다시 실행하여 회원증 페이지로 이동
-                    else:
-                        st.error("학번 또는 비밀번호가 일치하지 않습니다.")
+                            st.session_state.token = token
+                            st.rerun() # 페이지를 다시 실행하여 회원증 페이지로 이동
+                        else:
+                            st.error("학번 또는 비밀번호가 일치하지 않습니다.")
                 except requests.exceptions.ConnectionError:
                     st.error("백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요.")
 
@@ -493,14 +495,15 @@ def show_membership_card():
     if st.session_state.member_info is None:
         headers = {"Authorization": f"Bearer {st.session_state.token}"}
         try:
-            response = requests.get(f"{API_URL}/members/me", headers=headers)
-            if response.status_code == 200:
-                st.session_state.member_info = response.json()
-            else: # 토큰이 만료되었거나 유효하지 않은 경우
-                st.session_state.token = None
-                st.session_state.member_info = None
-                st.rerun()
-                return
+            with st.spinner("회원 정보를 불러오는 중입니다..."):
+                response = requests.get(f"{API_URL}/members/me", headers=headers)
+                if response.status_code == 200:
+                    st.session_state.member_info = response.json()
+                else: # 토큰이 만료되었거나 유효하지 않은 경우
+                    st.session_state.token = None
+                    st.session_state.member_info = None
+                    st.rerun()
+                    return
         except requests.exceptions.ConnectionError:
             st.error("백엔드 서버에 연결할 수 없습니다.")
             st.session_state.token = None # 연결 실패 시 로그아웃 처리

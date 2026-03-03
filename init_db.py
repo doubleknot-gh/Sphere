@@ -1,6 +1,12 @@
 from database import get_db
 from models import Member, MemberStatus
-from main import get_password_hash
+from passlib.context import CryptContext
+
+# 비밀번호 해싱 설정 (main.py 의존성 제거를 위해 직접 정의)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
 
 def init_db_data():
     db = next(get_db())
