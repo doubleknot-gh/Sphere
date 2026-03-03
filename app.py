@@ -201,8 +201,8 @@ def show_login_page():
                             st.rerun() # 페이지를 다시 실행하여 회원증 페이지로 이동
                         else:
                             st.error("학번 또는 비밀번호가 일치하지 않습니다.")
-                except requests.exceptions.ConnectionError:
-                    st.error("백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요.")
+                    except requests.exceptions.ConnectionError:
+                        st.error("백엔드 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.")
 
 # 1.5 관리자 대시보드 (신규 추가)
 def show_admin_dashboard():
