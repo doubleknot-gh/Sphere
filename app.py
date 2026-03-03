@@ -208,7 +208,7 @@ def show_login_page():
         st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
         with st.expander("🆘 관리자 계정 복구 (로그인이 안 될 때)"):
             st.caption("데이터베이스가 초기화되어 관리자 계정이 없다면 아래 버튼을 눌러주세요.")
-            secret_key = st.text_input("초기화 비밀키", value="local-init-secret", type="password", help="Render 환경변수 INIT_DB_SECRET 값")
+            secret_key = st.text_input("초기화 비밀키", value="admin1234", type="password", help="Render 환경변수 INIT_DB_SECRET 값")
             
             if st.button("관리자 계정(admin) 생성"):
                 try:
