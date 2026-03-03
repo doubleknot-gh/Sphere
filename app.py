@@ -212,8 +212,8 @@ def show_login_page():
             
             if st.button("관리자 계정(admin) 생성"):
                 try:
-                    # 비밀키 없이 요청
-                    res = requests.get(f"{API_URL}/init-db")
+                    # [수정] 백엔드 구버전 호환성을 위해 secret 파라미터 전송 (422 에러 방지)
+                    res = requests.get(f"{API_URL}/init-db", params={"secret": "admin1234"})
                     if res.status_code == 200:
                         st.success("✅ 복구 완료! (ID: admin / PW: admin1234)")
                     else:
