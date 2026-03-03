@@ -393,17 +393,13 @@ def reset_password(student_id: str, db_session: Session = Depends(get_db), admin
     return {"message": f"Password for {student_id} has been reset to '1234'."}
 
 @app.get("/init-db")
-def init_database(secret: str, db_session: Session = Depends(get_db)):
+def init_database(secret: Optional[str] = None, db_session: Session = Depends(get_db)):
     """
     [초기화] 데이터베이스에 관리자 및 테스트 계정 생성
     (Shell 접속이 어려울 때 브라우저에서 실행용)
     """
     messages = []
 
-    # 비밀키가 일치하지 않으면 초기화 거부
-    if secret != INIT_DB_SECRET and secret != "admin1234":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid secret for DB initialization")
-    
     # 1. 관리자 계정 생성
     if not db_session.query(Member).filter(Member.student_id == "admin").first():
         admin_user = Member(

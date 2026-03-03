@@ -15,7 +15,7 @@ from PIL import Image
 API_URL = "http://127.0.0.1:8000"  # 로컬 개발용 기본값
 
 if "API_URL" in os.environ: # Render 환경
-    API_URL = os.environ["API_URL"]
+    API_URL = os.environ["API_URL"].rstrip("/") # 끝에 붙은 슬래시 제거 (오류 방지)
 else: # Streamlit Cloud 또는 로컬 환경
     try:
         if "API_URL" in st.secrets:
@@ -208,17 +208,19 @@ def show_login_page():
         st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
         with st.expander("🆘 관리자 계정 복구 (로그인이 안 될 때)"):
             st.caption("데이터베이스가 초기화되어 관리자 계정이 없다면 아래 버튼을 눌러주세요.")
-            secret_key = st.text_input("초기화 비밀키", value="admin1234", type="password", help="Render 환경변수 INIT_DB_SECRET 값")
+            # secret_key 입력 불필요 (무조건 허용)
             
             if st.button("관리자 계정(admin) 생성"):
                 try:
-                    res = requests.get(f"{API_URL}/init-db", params={"secret": secret_key})
+                    # 비밀키 없이 요청
+                    res = requests.get(f"{API_URL}/init-db")
                     if res.status_code == 200:
                         st.success("✅ 복구 완료! (ID: admin / PW: admin1234)")
                     else:
-                        st.error(f"실패: {res.json().get('detail')}")
-                except:
-                    st.error("서버 연결 실패")
+                        # 에러 원인을 상세히 출력
+                        st.error(f"실패 (코드 {res.status_code}): {res.text}")
+                except Exception as e:
+                    st.error(f"서버 연결 실패: {e}")
 
 # 1.5 관리자 대시보드 (신규 추가)
 def show_admin_dashboard():
