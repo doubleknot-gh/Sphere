@@ -290,9 +290,9 @@ def show_admin_dashboard():
             club_counts = df_stats['club'].value_counts().head(10)
             club_counts_df = club_counts.reset_index()
             club_counts_df.columns = ['동아리', '회원 수']
-            chart1 = alt.Chart(club_counts_df).mark_bar(
+            chart1 = alt.Chart(club_counts_df).mark_circle(
                 color="#E4D4A4",
-                cornerRadius=3
+                size=100
             ).encode(
                 x=alt.X('동아리', sort=None, title=None, axis=alt.Axis(labelAngle=-45)),
                 y=alt.Y('회원 수', title=None)
@@ -311,9 +311,9 @@ def show_admin_dashboard():
             status_counts = df_stats['status'].value_counts()
             status_counts_df = status_counts.reset_index()
             status_counts_df.columns = ['상태', '인원']
-            chart2 = alt.Chart(status_counts_df).mark_bar(
+            chart2 = alt.Chart(status_counts_df).mark_circle(
                 color="#d4af37",
-                cornerRadius=3
+                size=100
             ).encode(
                 x=alt.X('상태', sort=None, title=None),
                 y=alt.Y('인원', title=None)
