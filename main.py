@@ -32,7 +32,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # JWT 설정
 SECRET_KEY = os.getenv("SECRET_KEY", "a-very-secret-key-for-local-development")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440 # 24시간 (60분 * 24)
 
 # DB 초기화용 비밀키
 INIT_DB_SECRET = os.getenv("INIT_DB_SECRET", "local-init-secret")
