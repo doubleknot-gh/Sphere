@@ -7,8 +7,9 @@ import os
 import io
 import random
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from PIL import Image
+import extra_streamlit_components as stx
 
 # --- 기본 설정 ---
 # FastAPI 백엔드 주소
@@ -27,6 +28,9 @@ else: # Streamlit Cloud 또는 로컬 환경
 # 페이지 설정 (넓은 레이아웃, 제목, 아이콘 등)
 logo_image = Image.open("logo.png")
 st.set_page_config(page_title="디지털 회원증", layout="wide", page_icon=logo_image)
+
+# --- 쿠키 매니저 초기화 (로그인 유지용) ---
+cookie_manager = stx.CookieManager(key="auth_cookie")
 
 # --- CSS 스타일 ---
 def local_css(file_name):
@@ -241,6 +245,10 @@ def show_login_page():
                                 pass
 
                             st.session_state.token = token
+                            # [쿠키 저장] 24시간 동안 로그인 유지
+                            expires = datetime.now() + timedelta(days=1)
+                            cookie_manager.set("access_token", token, expires_at=expires)
+                            time.sleep(0.5) # [중요] 쿠키가 브라우저에 저장될 때까지 잠시 대기
                             st.rerun() # 페이지를 다시 실행하여 회원증 페이지로 이동
                         else:
                             st.error("학번 또는 비밀번호가 일치하지 않습니다.")
@@ -703,12 +711,21 @@ def show_membership_card():
 
     # 로그아웃 버튼
     if st.button("로그아웃"):
+        cookie_manager.delete("access_token") # 쿠키 삭제
+        time.sleep(0.5) # [중요] 쿠키 삭제 처리 대기
         st.session_state.token = None
         st.session_state.member_info = None
         st.rerun()
 
 
 # --- 메인 실행 로직 ---
+
+# [세션 복구] 쿠키에 저장된 토큰이 있다면 불러오기
+if st.session_state.token is None:
+    cookie_token = cookie_manager.get(cookie="access_token")
+    if cookie_token:
+        st.session_state.token = cookie_token
+
 if st.session_state.token is None:
     show_login_page()
 else:
