@@ -287,11 +287,11 @@ def show_admin_dashboard():
         with chart_col1:
             st.caption("동아리별 회원 수 (상위 10개)")
             club_counts = df_stats['club'].value_counts().head(10)
-            st.bar_chart(club_counts)
+            st.line_chart(club_counts)
         with chart_col2:
             st.caption("회원 상태 비율")
             status_counts = df_stats['status'].value_counts()
-            st.bar_chart(status_counts)
+            st.line_chart(status_counts)
 
     # 탭으로 기능 분리
     tab1, tab2, tab3, tab4 = st.tabs(["👥 전체 회원 조회", "📂 명단 일괄 등록", "➕ 신규 회원 등록", "⚙️ 개별 회원 관리"])
