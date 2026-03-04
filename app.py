@@ -95,6 +95,49 @@ if 'token' not in st.session_state:
 if 'member_info' not in st.session_state:
     st.session_state.member_info = None
 
+# --- 헬퍼 함수: 회원증 HTML 생성 (재사용 목적) ---
+def get_card_html(info, is_preview=False):
+    # KU 로고 이미지 로드
+    ku_logo_html = ""
+    try:
+        with open("ku logo.png", "rb") as f:
+            encoded_ku = base64.b64encode(f.read()).decode()
+            ku_logo_html = f'<img src="data:image/png;base64,{encoded_ku}" style="width: 50px; margin-top: 5px;">'
+    except FileNotFoundError:
+        pass
+
+    # 미리보기 모드일 경우 시간 ID를 다르게 설정하여 충돌 방지
+    time_id = "real-time-preview" if is_preview else "real-time"
+    
+    return f"""
+        <style>
+            .membership-card {{
+                max-width: 600px !important; /* 카드 너비 확대 */
+            }}
+        </style>
+        <div class="membership-card">
+            <div class="card-header">
+                <div class="card-chip"></div>
+                <div style="text-align: right;">
+                    <div class="card-logo">DIGITAL MEMBER</div>
+                    {ku_logo_html}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="card-label">NAME</div>
+                <h2>{info['name']}</h2>
+                <div class="card-label">STUDENT ID</div>
+                <p class="student-id">{info['student_id']}</p>
+            </div>
+            <div class="card-footer">
+                <p class="club">{info.get('club', '소속 없음')}</p>
+                <div class="time" id="{time_id}">
+                    {datetime.now().strftime('%Y. %m. %d.') if is_preview else ''}
+                </div>
+            </div>
+        </div>
+    """
+
 # --- 페이지 로직 ---
 
 # 1. 로그인 페이지
@@ -229,6 +272,18 @@ def show_admin_dashboard():
         c3.metric("관리자", f"{len(df_stats[df_stats['role'] == 'admin'])}명")
         c4.metric("등록 동아리", f"{df_stats['club'].nunique()}개")
         st.markdown("---")
+        
+        # [디자인 추가] 통계 시각화 (차트)
+        st.subheader("📊 회원 현황 시각화")
+        chart_col1, chart_col2 = st.columns([2, 1])
+        with chart_col1:
+            st.caption("동아리별 회원 수 (상위 10개)")
+            club_counts = df_stats['club'].value_counts().head(10)
+            st.bar_chart(club_counts)
+        with chart_col2:
+            st.caption("회원 상태 비율")
+            status_counts = df_stats['status'].value_counts()
+            st.bar_chart(status_counts)
 
     # 탭으로 기능 분리
     tab1, tab2, tab3, tab4 = st.tabs(["👥 전체 회원 조회", "📂 명단 일괄 등록", "➕ 신규 회원 등록", "⚙️ 개별 회원 관리"])
@@ -422,6 +477,14 @@ def show_admin_dashboard():
         else:
             target_id = st.text_input("관리할 대상 학번")
         
+        # [기능 추가] 선택된 회원의 회원증 미리보기
+        if st.session_state.get('admin_member_list') and target_id:
+            target_member = next((m for m in st.session_state.admin_member_list if m['student_id'] == target_id), None)
+            if target_member:
+                with st.expander("💳 회원증 미리보기 (디자인 확인용)", expanded=False):
+                    st.markdown(get_card_html(target_member, is_preview=True), unsafe_allow_html=True)
+                    st.caption("※ 미리보기에서는 실시간 초 단위 시간이 표시되지 않을 수 있습니다.")
+
         st.markdown("---")
         st.subheader("소속 동아리 변경")
         new_club_name = st.text_input("변경할 동아리 이름", placeholder="예: 테니스부, 축구부 (여러 개는 콤마로 구분)")
@@ -593,41 +656,8 @@ def show_membership_card():
     st.image(logo_image, width=150)
     
     # KU 로고 이미지 로드 (base64)
-    ku_logo_html = ""
-    try:
-        with open("ku logo.png", "rb") as f:
-            encoded_ku = base64.b64encode(f.read()).decode()
-            ku_logo_html = f'<img src="data:image/png;base64,{encoded_ku}" style="width: 50px; margin-top: 5px;">'
-    except FileNotFoundError:
-        pass
-
-    # 회원증 카드 UI (세련된 신용카드 스타일)
-    st.markdown(f"""
-        <style>
-            .membership-card {{
-                max-width: 600px !important; /* 카드 너비 확대 (글자 잘림 방지) */
-            }}
-        </style>
-        <div class="membership-card">
-            <div class="card-header">
-                <div class="card-chip"></div>
-                <div style="text-align: right;">
-                    <div class="card-logo">DIGITAL MEMBER</div>
-                    {ku_logo_html}
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="card-label">NAME</div>
-                <h2>{info['name']}</h2>
-                <div class="card-label">STUDENT ID</div>
-                <p class="student-id">{info['student_id']}</p>
-            </div>
-            <div class="card-footer">
-                <p class="club">{info.get('club', '소속 없음')}</p>
-                <div class="time" id="real-time"></div>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
+    # [수정] 공통 함수 사용하여 회원증 렌더링
+    st.markdown(get_card_html(info), unsafe_allow_html=True)
 
     # 실시간 시간 표시 스크립트
     st.components.v1.html("""
