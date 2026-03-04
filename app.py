@@ -9,6 +9,7 @@ import random
 import pandas as pd
 from datetime import datetime, timedelta
 from PIL import Image
+import altair as alt
 import extra_streamlit_components as stx
 
 # --- 기본 설정 ---
@@ -287,11 +288,37 @@ def show_admin_dashboard():
         with chart_col1:
             st.caption("동아리별 회원 수 (상위 10개)")
             club_counts = df_stats['club'].value_counts().head(10)
-            st.bar_chart(club_counts, color="#E4D4A4")
+            club_counts_df = club_counts.reset_index()
+            club_counts_df.columns = ['동아리', '회원 수']
+            chart1 = alt.Chart(club_counts_df).mark_bar(
+                color="#E4D4A4",
+                cornerRadius=3
+            ).encode(
+                x=alt.X('동아리', sort=None, title=None, axis=alt.Axis(labelAngle=-45)),
+                y=alt.Y('회원 수', title=None)
+            ).configure_view(
+                stroke=None
+            ).configure_axis(
+                grid=False,
+                labelColor='#FFFFFF',
+                domain=False
+            ).properties(
+                background='transparent'
+            )
+            st.altair_chart(chart1, use_container_width=True)
         with chart_col2:
             st.caption("회원 상태 비율")
             status_counts = df_stats['status'].value_counts()
-            st.bar_chart(status_counts, color="#d4af37")
+            status_counts_df = status_counts.reset_index()
+            status_counts_df.columns = ['상태', '인원']
+            chart2 = alt.Chart(status_counts_df).mark_bar(
+                color="#d4af37",
+                cornerRadius=3
+            ).encode(
+                x=alt.X('상태', sort=None, title=None),
+                y=alt.Y('인원', title=None)
+            ).configure_view(stroke=None).configure_axis(grid=False, labelColor='#FFFFFF', domain=False).properties(background='transparent')
+            st.altair_chart(chart2, use_container_width=True)
 
     # 탭으로 기능 분리
     tab1, tab2, tab3, tab4 = st.tabs(["👥 전체 회원 조회", "📂 명단 일괄 등록", "➕ 신규 회원 등록", "⚙️ 개별 회원 관리"])
