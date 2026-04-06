@@ -280,7 +280,8 @@ def show_admin_dashboard():
             clean_str = str(club_str).replace('[', '').replace(']', '').replace("'", "").replace('"', '')
             # 쉼표(,), 전각 쉼표(，), 슬래시(/), 앰퍼샌드(&), 더하기(+) 등 다양한 기호로 확실히 분리
             clubs = re.split(r'[,，/&+]', clean_str)
-            return list(set(c for c in clubs if c and c.lower() not in ["소속없음", "소속 없음", "none", "null"]))
+            # 앞뒤 공백을 완벽히 제거(strip)하여 동일한 동아리가 공백 때문에 두 번 세어지는 현상 방지
+            return list(set(c.strip() for c in clubs if c.strip() and c.strip().lower() not in ["소속없음", "소속 없음", "none", "null"]))
             
         exploded_clubs = df_stats['club'].apply(get_clean_clubs_for_stats).explode().dropna()
 
