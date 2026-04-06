@@ -290,22 +290,6 @@ def show_admin_dashboard():
         c3.metric("관리자", f"{len(df_stats[df_stats['role'] == 'admin'])}명")
         c4.metric("등록 동아리", f"{exploded_clubs.nunique()}개")
         st.markdown("---")
-        
-        # [요청 반영] 불필요한 차트 제거 및 개별 동아리 회원 수만 막대 그래프로 명확하게 표시
-        st.subheader("📊 동아리별 회원 수 현황")
-        club_counts = exploded_clubs.value_counts().reset_index()
-        club_counts.columns = ['동아리', '회원 수']
-        
-        chart = alt.Chart(club_counts).mark_bar(
-            color="#E4D4A4", 
-            cornerRadiusTopLeft=4, 
-            cornerRadiusTopRight=4
-        ).encode(
-            x=alt.X('동아리', sort='-y', title=None, axis=alt.Axis(labelAngle=-45)),
-            y=alt.Y('회원 수', title='회원 수 (명)')
-        ).properties(background='transparent', height=350)
-        
-        st.altair_chart(chart, use_container_width=True)
 
     # 탭으로 기능 분리
     tab1, tab2, tab3, tab4 = st.tabs(["👥 전체 회원 조회", "📂 명단 일괄 등록", "➕ 신규 회원 등록", "⚙️ 개별 회원 관리"])
