@@ -272,50 +272,40 @@ def show_admin_dashboard():
             
     if st.session_state.get('admin_member_list'):
         df_stats = pd.DataFrame(st.session_state.admin_member_list)
+        
+        # [수정] 차트 및 통계를 위해 데이터 분리 및 완벽 정제
+        def get_clean_clubs_for_stats(club_str):
+            if pd.isnull(club_str) or str(club_str).strip() == "": return []
+            import re
+            clean_str = str(club_str).replace('[', '').replace(']', '').replace("'", "").replace('"', '')
+            # 쉼표(,), 전각 쉼표(，), 슬래시(/), 앰퍼샌드(&), 더하기(+) 등 다양한 기호로 확실히 분리
+            clubs = re.split(r'[,，/&+]', clean_str)
+            return list(set(c for c in clubs if c and c.lower() not in ["소속없음", "소속 없음", "none", "null"]))
+            
+        exploded_clubs = df_stats['club'].apply(get_clean_clubs_for_stats).explode().dropna()
+
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("총 회원 수", f"{len(df_stats)}명")
         c2.metric("활동 회원", f"{len(df_stats[df_stats['status'] == 'active'])}명")
         c3.metric("관리자", f"{len(df_stats[df_stats['role'] == 'admin'])}명")
-        c4.metric("등록 동아리", f"{df_stats['club'].nunique()}개")
+        c4.metric("등록 동아리", f"{exploded_clubs.nunique()}개")
         st.markdown("---")
         
-        # [디자인 추가] 통계 시각화 (차트)
-        st.subheader("📊 회원 현황 시각화")
-        chart_col1, chart_col2 = st.columns([2, 1])
-        with chart_col1:
-            st.caption("동아리별 회원 수 (상위 10개)")
-            club_counts = df_stats['club'].value_counts().head(10)
-            club_counts_df = club_counts.reset_index()
-            club_counts_df.columns = ['동아리', '회원 수']
-            chart1 = alt.Chart(club_counts_df).mark_circle(
-                color="#E4D4A4",
-                size=100
-            ).encode(
-                x=alt.X('동아리', sort=None, title=None, axis=alt.Axis(labelAngle=-45)),
-                y=alt.Y('회원 수', title=None)
-            ).configure_view(
-                stroke=None
-            ).configure_axis(
-                grid=False,
-                labelColor='#FFFFFF',
-                domain=False
-            ).properties(
-                background='transparent'
-            )
-            st.altair_chart(chart1, use_container_width=True)
-        with chart_col2:
-            st.caption("회원 상태 비율")
-            status_counts = df_stats['status'].value_counts()
-            status_counts_df = status_counts.reset_index()
-            status_counts_df.columns = ['상태', '인원']
-            chart2 = alt.Chart(status_counts_df).mark_circle(
-                color="#d4af37",
-                size=100
-            ).encode(
-                x=alt.X('상태', sort=None, title=None),
-                y=alt.Y('인원', title=None)
-            ).configure_view(stroke=None).configure_axis(grid=False, labelColor='#FFFFFF', domain=False).properties(background='transparent')
-            st.altair_chart(chart2, use_container_width=True)
+        # [요청 반영] 불필요한 차트 제거 및 개별 동아리 회원 수만 막대 그래프로 명확하게 표시
+        st.subheader("📊 동아리별 회원 수 현황")
+        club_counts = exploded_clubs.value_counts().reset_index()
+        club_counts.columns = ['동아리', '회원 수']
+        
+        chart = alt.Chart(club_counts).mark_bar(
+            color="#E4D4A4", 
+            cornerRadiusTopLeft=4, 
+            cornerRadiusTopRight=4
+        ).encode(
+            x=alt.X('동아리', sort='-y', title=None, axis=alt.Axis(labelAngle=-45)),
+            y=alt.Y('회원 수', title='회원 수 (명)')
+        ).properties(background='transparent', height=350)
+        
+        st.altair_chart(chart, use_container_width=True)
 
     # 탭으로 기능 분리
     tab1, tab2, tab3, tab4 = st.tabs(["👥 전체 회원 조회", "📂 명단 일괄 등록", "➕ 신규 회원 등록", "⚙️ 개별 회원 관리"])
