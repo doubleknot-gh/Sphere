@@ -10,7 +10,6 @@ import pandas as pd
 from datetime import datetime, timedelta
 from PIL import Image
 import altair as alt
-import extra_streamlit_components as stx
 
 # --- 기본 설정 ---
 # FastAPI 백엔드 주소
@@ -29,9 +28,6 @@ else: # Streamlit Cloud 또는 로컬 환경
 # 페이지 설정 (넓은 레이아웃, 제목, 아이콘 등)
 logo_image = Image.open("logo.png")
 st.set_page_config(page_title="디지털 회원증", layout="wide", page_icon=logo_image)
-
-# --- 쿠키 매니저 초기화 (로그인 유지용) ---
-cookie_manager = stx.CookieManager(key="auth_cookie")
 
 # --- CSS 스타일 ---
 def local_css(file_name):
@@ -114,6 +110,11 @@ def get_card_html(info, is_preview=False):
     # 미리보기 모드일 경우 시간 ID를 다르게 설정하여 충돌 방지
     time_id = "real-time-preview" if is_preview else "real-time"
     
+    # 소속 동아리가 여러 개일 경우 (콤마 구분), 쉼표를 없애고 각각 간격을 두어 옆으로 나열
+    raw_club = info.get('club')
+    raw_club = raw_club if raw_club else '소속 없음'
+    club_html = "".join([f"<span style='margin-right: 8px;'>{c.strip()}</span>" for c in raw_club.split(',')])
+
     return f"""
         <style>
             .membership-card {{
@@ -135,7 +136,7 @@ def get_card_html(info, is_preview=False):
                 <p class="student-id">{info['student_id']}</p>
             </div>
             <div class="card-footer">
-                <p class="club">{info.get('club', '소속 없음')}</p>
+                <p class="club">{club_html}</p>
                 <div class="time" id="{time_id}">
                     {datetime.now().strftime('%Y. %m. %d.') if is_preview else ''}
                 </div>
@@ -246,10 +247,6 @@ def show_login_page():
                                 pass
 
                             st.session_state.token = token
-                            # [쿠키 저장] 24시간 동안 로그인 유지
-                            expires = datetime.now() + timedelta(days=1)
-                            cookie_manager.set("access_token", token, expires_at=expires)
-                            time.sleep(0.5) # [중요] 쿠키가 브라우저에 저장될 때까지 잠시 대기
                             st.rerun() # 페이지를 다시 실행하여 회원증 페이지로 이동
                         else:
                             st.error("학번 또는 비밀번호가 일치하지 않습니다.")
@@ -339,11 +336,17 @@ def show_admin_dashboard():
             df = pd.DataFrame(st.session_state.admin_member_list)
 
             # [기능 추가] 동아리 필터링
-            all_clubs = sorted([x for x in df['club'].unique() if x])
+            all_clubs = set()
+            for clubs_str in df['club'].dropna():
+                for c in str(clubs_str).split(','):
+                    if c.strip(): all_clubs.add(c.strip())
+            all_clubs = sorted(list(all_clubs))
+            
             selected_clubs = st.multiselect("동아리별 보기", options=all_clubs, placeholder="전체 동아리")
             
             if selected_clubs:
-                df = df[df['club'].isin(selected_clubs)]
+                mask = df['club'].apply(lambda x: any(c in [cs.strip() for cs in str(x).split(',')] for c in selected_clubs) if pd.notnull(x) else False)
+                df = df[mask]
 
             # [기능 추가] 엑셀(CSV) 다운로드 버튼 (필터링된 결과 반영)
             csv = df.to_csv(index=False).encode('utf-8-sig')
@@ -354,8 +357,16 @@ def show_admin_dashboard():
                 mime="text/csv"
             )
 
-            # 선택 컬럼 추가 (화면 표시용)
+            # [기능 개선] 여러 동아리에 소속된 경우 데이터 표에서 행(row)을 분리하여 각 동아리별로 표시
             df_display = df.copy()
+            df_display['club'] = df_display['club'].apply(lambda x: [c.strip() for c in str(x).split(',')] if pd.notnull(x) and str(x).strip() else ["소속없음"])
+            df_display = df_display.explode('club')
+            
+            # 필터가 선택된 상태라면 선택한 동아리 행만 화면에 표시
+            if selected_clubs:
+                df_display = df_display[df_display['club'].isin(selected_clubs)]
+
+            # 선택 컬럼 추가 (화면 표시용)
             df_display.insert(0, "선택", False)
             
             # 데이터 에디터로 출력 (체크박스 기능)
@@ -404,6 +415,7 @@ def show_admin_dashboard():
 
     with tab2:
         st.info("엑셀 파일의 컬럼 순서가 달라도 아래에서 직접 지정하여 업로드할 수 있습니다.")
+        st.warning("💡 **한글 파일(.hwp) 관련 안내**\n\n한글 문서는 내부에 여러 표와 텍스트가 섞여 있어 시스템이 명단만 정확히 추출하기 어렵습니다. 한글 파일의 명단 표를 복사하여 **엑셀에 붙여넣고 .xlsx 형식으로 저장**한 뒤 업로드해 주세요.")
         uploaded_file = st.file_uploader("명단 파일 업로드 (xlsx, csv)", type=["xlsx", "csv"])
         
         if uploaded_file:
@@ -452,8 +464,7 @@ def show_admin_dashboard():
                             st.success(f"업로드 성공! {res.json().get('message', '')}")
                         elif res.status_code == 401:
                             st.error("세션이 만료되었습니다. 다시 로그인해주세요.")
-                            st.session_state.token = None
-                            st.session_state.member_info = None
+                            st.session_state.clear()
                             time.sleep(1)
                             st.rerun()
                         else:
@@ -481,11 +492,10 @@ def show_admin_dashboard():
                     try:
                         res = requests.post(f"{API_URL}/admin/members", headers=headers, json={"student_id": new_sid, "name": new_name, "club": new_club})
                         if res.status_code == 200:
-                            st.success(f"✅ {new_name}({new_sid}) 등록 완료!")
+                            st.success(f"✅ {new_name}({new_sid}) 등록 (또는 동아리 추가) 완료!")
                         elif res.status_code == 401:
                             st.error("세션이 만료되었습니다. 다시 로그인해주세요.")
-                            st.session_state.token = None
-                            st.session_state.member_info = None
+                            st.session_state.clear()
                             time.sleep(1)
                             st.rerun()
                         else:
@@ -506,9 +516,51 @@ def show_admin_dashboard():
                 pass
 
         if st.session_state.get('admin_member_list'):
-            member_dict = {f"{m['name']} ({m['student_id']})": m['student_id'] for m in st.session_state.admin_member_list}
-            selected_member = st.selectbox("관리할 대상 선택", options=list(member_dict.keys()))
-            target_id = member_dict[selected_member]
+            # 개별 동아리 목록 추출
+            all_clubs_tab4 = set()
+            for m in st.session_state.admin_member_list:
+                for c in (m.get('club') or "").split(','):
+                    if c.strip(): all_clubs_tab4.add(c.strip())
+            all_clubs_tab4 = sorted(list(all_clubs_tab4))
+            
+            selected_club_tab4 = st.selectbox("동아리 필터", options=["전체 동아리"] + all_clubs_tab4)
+            
+            filtered_members = st.session_state.admin_member_list
+            if selected_club_tab4 != "전체 동아리":
+                filtered_members = [m for m in filtered_members if selected_club_tab4 in [c.strip() for c in (m.get('club') or "").split(',')]]
+            
+            # [기능 추가] 특정 동아리 선택 시, 해당 동아리 전체 회원증 갤러리 뷰 제공
+            if selected_club_tab4 != "전체 동아리" and filtered_members:
+                with st.expander(f"🖼️ '{selected_club_tab4}' 소속 회원증 한눈에 보기", expanded=False):
+                    cols = st.columns(2) # 2열로 회원증 나열
+                    for i, m in enumerate(filtered_members):
+                        with cols[i % 2]:
+                            st.markdown(get_card_html(m, is_preview=True), unsafe_allow_html=True)
+
+            if filtered_members:
+                # [기능 개선] 여러 동아리에 소속된 경우 콤마로 묶지 않고 각각 분리하여 목록에 표시
+                member_dict = {}
+                for m in filtered_members:
+                    clubs = [c.strip() for c in (m.get('club') or "소속없음").split(',') if c.strip()]
+                    if not clubs:
+                        clubs = ["소속없음"]
+                    
+                    if selected_club_tab4 != "전체 동아리":
+                        # 특정 동아리를 필터링한 경우 해당 동아리 이름으로만 표시
+                        label = f"[{selected_club_tab4}] {m['name']} ({m['student_id']})"
+                        member_dict[label] = m['student_id']
+                    else:
+                        # 전체 동아리일 경우, 각각의 동아리별로 개별 항목 생성
+                        for c in clubs:
+                            label = f"[{c}] {m['name']} ({m['student_id']})"
+                            member_dict[label] = m['student_id']
+                            
+                sorted_labels = sorted(list(member_dict.keys()))
+                selected_member = st.selectbox("관리할 대상 선택", options=sorted_labels)
+                target_id = member_dict[selected_member]
+            else:
+                st.warning("해당 동아리에 등록된 회원이 없습니다.")
+                target_id = None
         else:
             target_id = st.text_input("관리할 대상 학번")
         
@@ -532,8 +584,7 @@ def show_admin_dashboard():
                         st.success("소속 동아리가 변경되었습니다.")
                     elif res.status_code == 401:
                         st.error("세션이 만료되었습니다. 다시 로그인해주세요.")
-                        st.session_state.token = None
-                        st.session_state.member_info = None
+                        st.session_state.clear()
                         time.sleep(1)
                         st.rerun()
                     else:
@@ -558,8 +609,7 @@ def show_admin_dashboard():
                         st.rerun()
                     elif res.status_code == 401:
                         st.error("세션이 만료되었습니다. 다시 로그인해주세요.")
-                        st.session_state.token = None
-                        st.session_state.member_info = None
+                        st.session_state.clear()
                         time.sleep(1)
                         st.rerun()
                     else:
@@ -584,8 +634,7 @@ def show_admin_dashboard():
                         st.success(f"권한이 '{new_role}'로 변경되었습니다.")
                     elif res.status_code == 401:
                         st.error("세션이 만료되었습니다. 다시 로그인해주세요.")
-                        st.session_state.token = None
-                        st.session_state.member_info = None
+                        st.session_state.clear()
                         time.sleep(1)
                         st.rerun()
                     else: st.error(f"변경 실패: {res.json().get('detail')}")
@@ -602,8 +651,7 @@ def show_admin_dashboard():
                                      headers=headers, params={"status": new_status})
                 if res.status_code == 200: st.success("변경 완료")
                 elif res.status_code == 401:
-                    st.session_state.token = None
-                    st.session_state.member_info = None
+                    st.session_state.clear()
                     st.rerun()
                 else: st.error("변경 실패")
         with col2:
@@ -613,8 +661,7 @@ def show_admin_dashboard():
                     if res.status_code == 200:
                         st.success(f"{target_id}의 비밀번호가 '1234'로 초기화되었습니다.")
                     elif res.status_code == 401:
-                        st.session_state.token = None
-                        st.session_state.member_info = None
+                        st.session_state.clear()
                         st.rerun()
                     else:
                         st.error(f"초기화 실패: {res.json().get('detail')}")
@@ -640,8 +687,7 @@ def show_admin_dashboard():
                                 time.sleep(0.3) # 삭제 후 대기 시간 단축
                                 st.rerun()
                             elif res.status_code == 401:
-                                st.session_state.token = None
-                                st.session_state.member_info = None
+                                st.session_state.clear()
                                 st.rerun()
                             else: 
                                 st.error(f"삭제 실패: {res.json().get('detail')}")
@@ -663,14 +709,12 @@ def show_membership_card():
                 if response.status_code == 200:
                     st.session_state.member_info = response.json()
                 else: # 토큰이 만료되었거나 유효하지 않은 경우
-                    st.session_state.token = None
-                    st.session_state.member_info = None
+                    st.session_state.clear()
                     st.rerun()
                     return
         except requests.exceptions.ConnectionError:
             st.error("백엔드 서버에 연결할 수 없습니다.")
-            st.session_state.token = None # 연결 실패 시 로그아웃 처리
-            st.session_state.member_info = None
+            st.session_state.clear() # 연결 실패 시 전체 세션 캐시 초기화 및 로그아웃
             if st.button("다시 시도"):
                 st.rerun()
             return
@@ -738,20 +782,11 @@ def show_membership_card():
 
     # 로그아웃 버튼
     if st.button("로그아웃"):
-        cookie_manager.delete("access_token") # 쿠키 삭제
-        time.sleep(0.5) # [중요] 쿠키 삭제 처리 대기
-        st.session_state.token = None
-        st.session_state.member_info = None
+        st.session_state.clear()
         st.rerun()
 
 
 # --- 메인 실행 로직 ---
-
-# [세션 복구] 쿠키에 저장된 토큰이 있다면 불러오기
-if st.session_state.token is None:
-    cookie_token = cookie_manager.get(cookie="access_token")
-    if cookie_token:
-        st.session_state.token = cookie_token
 
 if st.session_state.token is None:
     show_login_page()

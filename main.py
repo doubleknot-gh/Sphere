@@ -32,7 +32,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # JWT 설정
 SECRET_KEY = os.getenv("SECRET_KEY", "a-very-secret-key-for-local-development")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 1440 # 24시간 (60분 * 24)
+ACCESS_TOKEN_EXPIRE_MINUTES = 5 # 5분
 
 # DB 초기화용 비밀키
 INIT_DB_SECRET = os.getenv("INIT_DB_SECRET", "local-init-secret")
@@ -309,7 +309,14 @@ async def upload_csv(file: UploadFile = File(...), db_session: Session = Depends
                 success_count += 1
         
         db_session.commit()
-        return {"message": f"신규 {success_count}명 등록, {updated_count}명 정보 업데이트 (변경없음 {skip_count}명)"}
+        
+        msg = f"신규 {success_count}명 등록 완료"
+        if updated_count > 0:
+            msg += f", {updated_count}명 소속 동아리 추가"
+        if skip_count > 0:
+            msg += f" (중복회원 {skip_count}명 제외)"
+            
+        return {"message": msg}
     except Exception as e:
         db_session.rollback()
         print(f"Upload Error: {str(e)}")
@@ -320,8 +327,25 @@ def create_member(member: MemberCreate, db_session: Session = Depends(get_db), a
     """
     [관리자] 개별 회원 직접 등록
     """
-    if db_session.query(Member).filter(Member.student_id == member.student_id).first():
-        raise HTTPException(status_code=400, detail="이미 존재하는 학번입니다.")
+    existing_member = db_session.query(Member).filter(Member.student_id == member.student_id).first()
+    if existing_member:
+        # 이미 존재하는 회원이면 소속 동아리만 추가
+        current_clubs = [c.strip() for c in (existing_member.club or "").split(',')]
+        if member.club and member.club not in current_clubs:
+            if existing_member.club:
+                existing_member.club += f", {member.club}"
+            else:
+                existing_member.club = member.club
+            
+            # 총동아리연합회 소속이 추가되거나 이름이 김근호인 경우 관리자 권한 부여
+            if member.club == "총동아리연합회" or member.name == "김근호":
+                existing_member.role = "admin"
+            
+            db_session.commit()
+            db_session.refresh(existing_member)
+            return existing_member
+        else:
+            raise HTTPException(status_code=400, detail="이미 해당 동아리에 등록되어 있는 학번입니다.")
     
     # 이름이 '김근호'이거나 소속 동아리가 '총동아리연합회'이면 관리자 권한 부여
     role = "admin" if member.club == "총동아리연합회" or member.name == "김근호" else "member"

@@ -9,7 +9,6 @@ FastAPI와 Streamlit으로 구현된 웹 기반 디지털 회원증 시스템입
   - 디지털 회원증 확인 (이름, 학번, 소속 동아리)
   - 실시간 시간 표시
   - 비밀번호 변경
-  - 로그인 상태 유지 (쿠키 기반, 새로고침 시에도 유지)
 - **관리자 기능**
   - 관리자 전용 대시보드
   - 전체 회원 목록 조회 및 검색
@@ -21,7 +20,6 @@ FastAPI와 Streamlit으로 구현된 웹 기반 디지털 회원증 시스템입
 
 - **Backend**: Python, FastAPI, SQLAlchemy, Pydantic, Passlib, python-jose
 - **Frontend**: Streamlit
-- **Frontend Libs**: extra-streamlit-components (Cookie Manager)
 - **Database**: PostgreSQL (for deployment), SQLite (for local)
 - **Deployment**: Render.com
 

@@ -12,4 +12,3 @@ psycopg2-binary
 bcrypt==4.0.1
 openpyxl
 pandas
-extra-streamlit-components
