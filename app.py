@@ -291,6 +291,11 @@ def show_admin_dashboard():
         c3.metric("관리자", f"{len(df_stats[df_stats['role'] == 'admin'])}명")
         c4.metric("등록 동아리", f"{exploded_clubs.nunique()}개")
         st.markdown("---")
+        
+        # [기능 추가] 등록된 전체 동아리 목록 작게 표시 (접이식 메뉴)
+        with st.expander("📋 등록된 전체 동아리 목록 보기", expanded=False):
+            unique_clubs = sorted(exploded_clubs.unique().tolist())
+            st.caption(", ".join(unique_clubs))
 
     # 탭으로 기능 분리
     tab1, tab2, tab3, tab4 = st.tabs(["👥 전체 회원 조회", "📂 명단 일괄 등록", "➕ 신규 회원 등록", "⚙️ 개별 회원 관리"])
