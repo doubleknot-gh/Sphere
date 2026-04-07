@@ -32,7 +32,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # JWT 설정
 SECRET_KEY = os.getenv("SECRET_KEY", "a-very-secret-key-for-local-development")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 5 # 5분
+MEMBER_TOKEN_EXPIRE_MINUTES = 5 # 일반 회원 5분
+ADMIN_TOKEN_EXPIRE_MINUTES = 7 # 관리자 7분
 
 # DB 초기화용 비밀키
 INIT_DB_SECRET = os.getenv("INIT_DB_SECRET", "local-init-secret")
@@ -135,7 +136,14 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
             detail="Incorrect student_id or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        
+    # 권한별 토큰 만료 시간 다르게 설정
+    if user.role == "admin":
+        expire_minutes = ADMIN_TOKEN_EXPIRE_MINUTES
+    else:
+        expire_minutes = MEMBER_TOKEN_EXPIRE_MINUTES
+        
+    access_token_expires = timedelta(minutes=expire_minutes)
     access_token = create_access_token(
         data={"sub": user.student_id}, expires_delta=access_token_expires
     )
