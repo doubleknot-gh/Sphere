@@ -236,6 +236,9 @@ def show_login_page():
     # 배경 파티클 효과 적용
     add_particle_effect()
     
+    # [수정] 애니메이션을 위한 빈 공간 확보 (폼 바깥쪽)
+    animation_placeholder = st.empty()
+    
     # 화면 중앙 정렬을 위한 컬럼 분할
     col1, col2, col3 = st.columns([1, 1.2, 1])
     
@@ -262,45 +265,86 @@ def show_login_page():
             submitted = st.form_submit_button("로그인")
 
             if submitted:
-                try:
-                    response = requests.post(
-                        f"{API_URL}/token",
-                        data={"username": student_id, "password": password}
-                    )
-                    if response.status_code == 200:
-                        token = response.json()['access_token']
-                        
-                        # 사용자 이름 가져오기 (환영 메시지용)
-                        user_name = ""
-                        role = "member"
-                        try:
-                            headers = {"Authorization": f"Bearer {token}"}
-                            me_res = requests.get(f"{API_URL}/members/me", headers=headers)
-                            if me_res.status_code == 200:
-                                user_info = me_res.json()
-                                user_name = user_info['name']
-                                role = user_info.get('role', 'member')
-                        except:
-                            pass
+                # [UX 개선] 서버 응답 대기 중 로딩 표시 추가
+                with st.spinner("서버에 접속 중입니다... (무료 서버가 깨어나는 데 최대 1분 소요될 수 있습니다)"):
+                    try:
+                        response = requests.post(
+                            f"{API_URL}/token",
+                            data={"username": student_id, "password": password}
+                        )
+                        if response.status_code == 200:
+                            token = response.json()['access_token']
+                            
+                            # 사용자 이름 가져오기 (환영 메시지용)
+                            user_name = ""
+                            role = "member"
+                            try:
+                                headers = {"Authorization": f"Bearer {token}"}
+                                me_res = requests.get(f"{API_URL}/members/me", headers=headers)
+                                if me_res.status_code == 200:
+                                    user_info = me_res.json()
+                                    user_name = user_info['name']
+                                    role = user_info.get('role', 'member')
+                            except:
+                                pass
 
-                        # 로그인 만료 시간 설정 (관리자 7분, 회원 5분)
-                        expire_mins = 7 if role == 'admin' else 5
-                        st.session_state.expire_time = datetime.now() + timedelta(minutes=expire_mins)
+                            # 로그인 만료 시간 설정 (관리자 7분, 회원 5분)
+                            expire_mins = 7 if role == 'admin' else 5
+                            st.session_state.expire_time = datetime.now() + timedelta(minutes=expire_mins)
 
-                        if user_name:
-                            st.success(f"환영합니다, {user_name}님!")
+                            # 로그인 성공 애니메이션 (로고 확대 및 페이드아웃)
+                            try:
+                                with open("logo.png", "rb") as f:
+                                    anim_logo = base64.b64encode(f.read()).decode()
+                                
+                                welcome_html = ""
+                                if user_name:
+                                    welcome_html = f"<h2 style='color: #E4D4A4; margin-top: 20px; font-size: 2rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.5); animation: fadeInUp 0.5s ease-out;'>환영합니다, {user_name}님!</h2>"
+
+                                # [수정] 폼 내부가 아닌 외부 placeholder에 애니메이션 렌더링
+                                with animation_placeholder:
+                                    st.markdown(f"""
+                                        <div style="
+                                            position: fixed;
+                                            top: 0; left: 0;
+                                            width: 100vw; height: 100vh;
+                                            background-color: #050A18;
+                                            z-index: 999999;
+                                            display: flex;
+                                            flex-direction: column;
+                                            justify-content: center;
+                                            align-items: center;
+                                            animation: fadeOutOverlay 0.8s forwards;
+                                        ">
+                                            <img src="data:image/png;base64,{anim_logo}" style="
+                                                width: 200px;
+                                                animation: zoomOutLogo 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+                                            ">
+                                            {welcome_html}
+                                        </div>
+                                        <style>
+                                            @keyframes zoomOutLogo {{
+                                                0% {{ transform: scale(1); opacity: 1; }}
+                                                100% {{ transform: scale(5); opacity: 0; }}
+                                            }}
+                                            @keyframes fadeOutOverlay {{
+                                                0% {{ opacity: 1; }}
+                                                70% {{ opacity: 1; }}
+                                                100% {{ opacity: 0; pointer-events: none; }}
+                                            }}
+                                        </style>
+                                    """, unsafe_allow_html=True)
+                                time.sleep(0.7) 
+                            except:
+                                pass
+
+                            st.session_state.token = token
+                            st.session_state.save_ls = True
+                            st.rerun() # 페이지를 다시 실행하여 회원증 페이지로 이동
                         else:
-                            st.success("로그인 성공!")
-                        
-                        time.sleep(0.5)
-
-                        st.session_state.token = token
-                        st.session_state.save_ls = True
-                        st.rerun() # 페이지를 다시 실행하여 회원증 페이지로 이동
-                    else:
-                        st.error("학번 또는 비밀번호가 일치하지 않습니다.")
-                except requests.exceptions.ConnectionError:
-                    st.error("백엔드 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.")
+                            st.error("학번 또는 비밀번호가 일치하지 않습니다.")
+                    except requests.exceptions.ConnectionError:
+                        st.error("백엔드 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.")
 
 
 # 1.5 관리자 대시보드 (신규 추가)
