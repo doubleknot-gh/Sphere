@@ -201,6 +201,11 @@ def get_card_html(info, is_preview=False):
     club_html = "".join([f"<span style='margin-right: 8px;'>{c.strip()}</span>" for c in raw_club.split(',')])
 
     return f"""
+        <style>
+            .membership-card {{
+                max-width: 600px !important; /* 카드 너비 확대 */
+            }}
+        </style>
         <div class="membership-card">
             <div class="card-header">
                 <div class="card-chip"></div>
@@ -327,7 +332,7 @@ def show_login_page():
                                                 70% {{ opacity: 1; }}
                                                 100% {{ opacity: 0; pointer-events: none; }}
                                             }}
-                                        </div>
+                                        </style>
                                     """, unsafe_allow_html=True)
                                 time.sleep(0.7) # 대기 시간 1.2s -> 0.7s 단축
                             except:
