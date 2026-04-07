@@ -813,10 +813,14 @@ def show_membership_card():
                     
                     // 매번 렌더링될 때마다 실제 파이썬 연장 버튼(extend_hidden_btn)을 화면에서 숨기기 처리
                     const btns = Array.from(parentDoc.querySelectorAll('button'));
-                    const hiddenBtn = btns.find(b => b.innerText.includes('extend_hidden_btn'));
+                    const hiddenBtn = btns.find(b => b.textContent.includes('extend_hidden_btn'));
                     if (hiddenBtn) {{
                         const btnContainer = hiddenBtn.closest('.stButton');
-                        if (btnContainer) btnContainer.style.display = 'none';
+                        if (btnContainer) {{
+                            btnContainer.style.position = 'absolute';
+                            btnContainer.style.opacity = '0';
+                            btnContainer.style.zIndex = '-1';
+                        }}
                     }}
 
                     // 기존 타이머 초기화 (중복 방지)
@@ -845,7 +849,7 @@ def show_membership_card():
                         extendBtn.onclick = function() {{
                             // 클릭 시 현재 돔에 있는 파이썬 연결 버튼을 찾아 클릭 이벤트 발생
                             const currentBtns = Array.from(parentDoc.querySelectorAll('button'));
-                            const currentHiddenBtn = currentBtns.find(b => b.innerText.includes('extend_hidden_btn'));
+                            const currentHiddenBtn = currentBtns.find(b => b.textContent.includes('extend_hidden_btn'));
                             if (currentHiddenBtn) currentHiddenBtn.click();
                         }};
                         timerDiv.appendChild(extendBtn);
