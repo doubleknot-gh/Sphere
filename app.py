@@ -327,7 +327,7 @@ def show_login_page():
                                                 70% {{ opacity: 1; }}
                                                 100% {{ opacity: 0; pointer-events: none; }}
                                             }}
-                                        </style>
+                                        </div>
                                     """, unsafe_allow_html=True)
                                 time.sleep(0.7) # 대기 시간 1.2s -> 0.7s 단축
                             except:

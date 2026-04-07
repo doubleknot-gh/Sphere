@@ -407,31 +407,3 @@ input::placeholder {
 [data-testid="stMetricValue"] {
     color: #FFFFFF !important;
 }
-
-/* --- 스마트폰(모바일) 화면 대응 (반응형) --- */
-@media (max-width: 500px) {
-    .membership-card {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 1.58 / 1;
-        min-height: 200px;
-        margin: 10px auto;
-        padding: 20px;
-        border-radius: 12px;
-    }
-    .membership-card h2 {
-        font-size: 1.15rem;
-        margin-bottom: 8px;
-    }
-    .membership-card .student-id {
-        font-size: 1.05rem;
-    }
-    .membership-card .club {
-        font-size: 0.75rem;
-        max-width: 180px;
-    }
-    .card-chip {
-        width: 38px;
-        height: 26px;
-    }
-}
