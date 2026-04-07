@@ -136,26 +136,36 @@ if not st.session_state.local_storage_checked:
     st.components.v1.html("""
         <script>
             const parentDoc = window.parent.document;
-            const tokenInput = parentDoc.querySelector('input[aria-label="hidden_ls_token"]');
-            const expireInput = parentDoc.querySelector('input[aria-label="hidden_ls_expire"]');
             
-            const savedToken = localStorage.getItem('access_token');
-            const savedExpire = localStorage.getItem('expire_time');
-            
-            if (savedToken && tokenInput && tokenInput.value === "") {
-                let setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
-                setter.call(tokenInput, savedToken);
-                tokenInput.dispatchEvent(new Event('input', { bubbles: true }));
+            // 화면이 그려질 때까지 최대 2초간 반복해서 찾는 로직 (빈 화면 방지)
+            let attempts = 0;
+            let checkInterval = setInterval(function() {
+                const tokenInput = parentDoc.querySelector('input[aria-label="hidden_ls_token"]');
+                const expireInput = parentDoc.querySelector('input[aria-label="hidden_ls_expire"]');
                 
-                if (savedExpire && expireInput) {
-                    setter.call(expireInput, savedExpire);
-                    expireInput.dispatchEvent(new Event('input', { bubbles: true }));
+                if (tokenInput) {
+                    clearInterval(checkInterval);
+                    const savedToken = localStorage.getItem('access_token');
+                    const savedExpire = localStorage.getItem('expire_time');
+                    
+                    if (savedToken && tokenInput.value === "") {
+                        let setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+                        setter.call(tokenInput, savedToken);
+                        tokenInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        
+                        if (savedExpire && expireInput) {
+                            setter.call(expireInput, savedExpire);
+                            expireInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    } else if (!savedToken && tokenInput.value === "") {
+                        let setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+                        setter.call(tokenInput, "NONE");
+                        tokenInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
                 }
-            } else if (!savedToken && tokenInput && tokenInput.value === "") {
-                let setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
-                setter.call(tokenInput, "NONE");
-                tokenInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
+                attempts++;
+                if(attempts > 20) clearInterval(checkInterval);
+            }, 100);
         </script>
     """, height=0)
     
@@ -172,7 +182,6 @@ if not st.session_state.local_storage_checked:
         st.session_state.local_storage_checked = True
         st.rerun()
         
-    st.stop()
 
 # --- 헬퍼 함수: 강제 로그아웃 처리 ---
 def do_logout():
