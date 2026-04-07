@@ -48,12 +48,9 @@ input::placeholder {
     border-top: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 16px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-    width: 100%;
-    max-width: 420px;
-    aspect-ratio: 1.58 / 1; /* 실제 신용카드 황금비율 적용 */
-    height: auto;
-    min-height: 220px;
-    margin: 20px auto;
+    width: 400px;
+    height: 280px;
+    margin: 40px auto;
     padding: 25px;
     box-sizing: border-box;
     color: white;
@@ -414,6 +411,10 @@ input::placeholder {
 /* --- 스마트폰(모바일) 화면 대응 (반응형) --- */
 @media (max-width: 500px) {
     .membership-card {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1.58 / 1;
+        min-height: 200px;
         margin: 10px auto;
         padding: 20px;
         border-radius: 12px;
