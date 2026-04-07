@@ -97,6 +97,89 @@ if 'member_info' not in st.session_state:
     st.session_state.member_info = None
 if 'expire_time' not in st.session_state:
     st.session_state.expire_time = None
+if 'local_storage_checked' not in st.session_state:
+    st.session_state.local_storage_checked = False
+
+# --- 로컬 스토리지 저장/삭제 이벤트 처리 ---
+if st.session_state.get('save_ls'):
+    st.components.v1.html(f"""
+        <script>
+            localStorage.setItem('access_token', '{st.session_state.token}');
+            localStorage.setItem('expire_time', '{st.session_state.expire_time.isoformat() if st.session_state.expire_time else ""}');
+        </script>
+    """, height=0)
+    st.session_state.save_ls = False
+
+if st.session_state.get('clear_ls'):
+    st.components.v1.html("""
+        <script>
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('expire_time');
+        </script>
+    """, height=0)
+    st.session_state.clear_ls = False
+
+# --- 로컬 스토리지(자동 로그인) 읽기 연동 ---
+if not st.session_state.local_storage_checked:
+    st.markdown("""
+        <style>
+            div[data-testid="stTextInput"]:has(input[aria-label="hidden_ls_token"]),
+            div[data-testid="stTextInput"]:has(input[aria-label="hidden_ls_expire"]) {
+                display: none;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    ls_token = st.text_input("hidden_ls_token", key="ls_token_input", label_visibility="collapsed")
+    ls_expire = st.text_input("hidden_ls_expire", key="ls_expire_input", label_visibility="collapsed")
+    
+    st.components.v1.html("""
+        <script>
+            const parentDoc = window.parent.document;
+            const tokenInput = parentDoc.querySelector('input[aria-label="hidden_ls_token"]');
+            const expireInput = parentDoc.querySelector('input[aria-label="hidden_ls_expire"]');
+            
+            const savedToken = localStorage.getItem('access_token');
+            const savedExpire = localStorage.getItem('expire_time');
+            
+            if (savedToken && tokenInput && tokenInput.value === "") {
+                let setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+                setter.call(tokenInput, savedToken);
+                tokenInput.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                if (savedExpire && expireInput) {
+                    setter.call(expireInput, savedExpire);
+                    expireInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            } else if (!savedToken && tokenInput && tokenInput.value === "") {
+                let setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+                setter.call(tokenInput, "NONE");
+                tokenInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        </script>
+    """, height=0)
+    
+    if ls_token == "NONE":
+        st.session_state.local_storage_checked = True
+        st.rerun()
+    elif ls_token and ls_token != "NONE":
+        st.session_state.token = ls_token
+        if ls_expire:
+            try:
+                st.session_state.expire_time = datetime.fromisoformat(ls_expire)
+            except:
+                pass
+        st.session_state.local_storage_checked = True
+        st.rerun()
+        
+    st.stop()
+
+# --- 헬퍼 함수: 강제 로그아웃 처리 ---
+def do_logout():
+    st.session_state.clear()
+    st.session_state.clear_ls = True
+    st.session_state.local_storage_checked = True
+    st.rerun()
 
 # --- 헬퍼 함수: 회원증 HTML 생성 (재사용 목적) ---
 def get_card_html(info, is_preview=False):
@@ -118,11 +201,6 @@ def get_card_html(info, is_preview=False):
     club_html = "".join([f"<span style='margin-right: 8px;'>{c.strip()}</span>" for c in raw_club.split(',')])
 
     return f"""
-        <style>
-            .membership-card {{
-                max-width: 600px !important; /* 카드 너비 확대 */
-            }}
-        </style>
         <div class="membership-card">
             <div class="card-header">
                 <div class="card-chip"></div>
@@ -256,6 +334,7 @@ def show_login_page():
                                 pass
 
                             st.session_state.token = token
+                            st.session_state.save_ls = True
                             st.rerun() # 페이지를 다시 실행하여 회원증 페이지로 이동
                         else:
                             st.error("학번 또는 비밀번호가 일치하지 않습니다.")
@@ -453,9 +532,8 @@ def show_admin_dashboard():
                             st.success(f"업로드 성공! {res.json().get('message', '')}")
                         elif res.status_code == 401:
                             st.error("세션이 만료되었습니다. 다시 로그인해주세요.")
-                            st.session_state.clear()
                             time.sleep(1)
-                            st.rerun()
+                            do_logout()
                         else:
                             try: err_msg = res.json().get('detail')
                             except: err_msg = res.text
@@ -484,9 +562,8 @@ def show_admin_dashboard():
                             st.success(f"✅ {new_name}({new_sid}) 등록 (또는 동아리 추가) 완료!")
                         elif res.status_code == 401:
                             st.error("세션이 만료되었습니다. 다시 로그인해주세요.")
-                            st.session_state.clear()
                             time.sleep(1)
-                            st.rerun()
+                            do_logout()
                         else:
                             st.error(f"❌ 등록 실패: {res.json().get('detail')}")
                     except requests.exceptions.RequestException:
@@ -573,9 +650,8 @@ def show_admin_dashboard():
                         st.success("소속 동아리가 변경되었습니다.")
                     elif res.status_code == 401:
                         st.error("세션이 만료되었습니다. 다시 로그인해주세요.")
-                        st.session_state.clear()
                         time.sleep(1)
-                        st.rerun()
+                        do_logout()
                     else:
                         st.error(f"변경 실패: {res.json().get('detail')}")
                 except requests.exceptions.RequestException:
@@ -598,9 +674,8 @@ def show_admin_dashboard():
                         st.rerun()
                     elif res.status_code == 401:
                         st.error("세션이 만료되었습니다. 다시 로그인해주세요.")
-                        st.session_state.clear()
                         time.sleep(1)
-                        st.rerun()
+                        do_logout()
                     else:
                         st.error(f"변경 실패: {res.json().get('detail')}")
                 except requests.exceptions.RequestException:
@@ -623,9 +698,8 @@ def show_admin_dashboard():
                         st.success(f"권한이 '{new_role}'로 변경되었습니다.")
                     elif res.status_code == 401:
                         st.error("세션이 만료되었습니다. 다시 로그인해주세요.")
-                        st.session_state.clear()
                         time.sleep(1)
-                        st.rerun()
+                        do_logout()
                     else: st.error(f"변경 실패: {res.json().get('detail')}")
                 except requests.exceptions.RequestException:
                     st.error("서버 연결 실패")
@@ -640,8 +714,7 @@ def show_admin_dashboard():
                                      headers=headers, params={"status": new_status})
                 if res.status_code == 200: st.success("변경 완료")
                 elif res.status_code == 401:
-                    st.session_state.clear()
-                    st.rerun()
+                    do_logout()
                 else: st.error("변경 실패")
         with col2:
             if st.button("비밀번호 초기화 ('1234')"):
@@ -650,8 +723,7 @@ def show_admin_dashboard():
                     if res.status_code == 200:
                         st.success(f"{target_id}의 비밀번호가 '1234'로 초기화되었습니다.")
                     elif res.status_code == 401:
-                        st.session_state.clear()
-                        st.rerun()
+                        do_logout()
                     else:
                         st.error(f"초기화 실패: {res.json().get('detail')}")
                 else:
@@ -676,8 +748,7 @@ def show_admin_dashboard():
                                 time.sleep(0.3) # 삭제 후 대기 시간 단축
                                 st.rerun()
                             elif res.status_code == 401:
-                                st.session_state.clear()
-                                st.rerun()
+                                do_logout()
                             else: 
                                 st.error(f"삭제 실패: {res.json().get('detail')}")
                         except requests.exceptions.RequestException:
@@ -695,8 +766,7 @@ def show_membership_card():
         if remaining <= 0:
             st.warning("세션이 만료되었습니다. 자동으로 로그아웃됩니다.")
             time.sleep(1)
-            st.session_state.clear()
-            st.rerun()
+            do_logout()
             return
         else:
             # [기능 추가] 세션 연장 기능 (백엔드 토큰 갱신 및 프론트 시간 초기화)
@@ -709,14 +779,14 @@ def show_membership_card():
                         role = st.session_state.member_info.get('role', 'member') if st.session_state.member_info else 'member'
                         expire_mins = 7 if role == 'admin' else 5
                         st.session_state.expire_time = datetime.now() + timedelta(minutes=expire_mins)
+                        st.session_state.save_ls = True
                         st.success("✅ 세션이 성공적으로 연장되었습니다!")
                         time.sleep(1)
                         st.rerun()
                     elif res.status_code == 401:
                         st.warning("세션이 이미 만료되어 연장할 수 없습니다. 다시 로그인해주세요.")
                         time.sleep(1.5)
-                        st.session_state.clear()
-                        st.rerun()
+                        do_logout()
                 except:
                     pass
 
@@ -809,12 +879,13 @@ def show_membership_card():
                 if response.status_code == 200:
                     st.session_state.member_info = response.json()
                 else: # 토큰이 만료되었거나 유효하지 않은 경우
-                    st.session_state.clear()
-                    st.rerun()
+                    do_logout()
                     return
         except requests.exceptions.ConnectionError:
             st.error("백엔드 서버에 연결할 수 없습니다.")
-            st.session_state.clear() # 연결 실패 시 전체 세션 캐시 초기화 및 로그아웃
+            st.session_state.clear()
+            st.session_state.clear_ls = True
+            st.session_state.local_storage_checked = True
             if st.button("다시 시도"):
                 st.rerun()
             return
@@ -882,8 +953,7 @@ def show_membership_card():
 
     # 로그아웃 버튼
     if st.button("로그아웃"):
-        st.session_state.clear()
-        st.rerun()
+        do_logout()
 
 
 # --- 메인 실행 로직 ---
