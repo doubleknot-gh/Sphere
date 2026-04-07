@@ -99,6 +99,8 @@ if 'expire_time' not in st.session_state:
     st.session_state.expire_time = None
 if 'local_storage_checked' not in st.session_state:
     st.session_state.local_storage_checked = False
+if 'extend_count' not in st.session_state:
+    st.session_state.extend_count = 0
 
 # --- 로컬 스토리지 저장/삭제 이벤트 처리 ---
 if st.session_state.get('save_ls'):
@@ -106,6 +108,7 @@ if st.session_state.get('save_ls'):
         <script>
             localStorage.setItem('access_token', '{st.session_state.token}');
             localStorage.setItem('expire_time', '{st.session_state.expire_time.isoformat() if st.session_state.expire_time else ""}');
+            localStorage.setItem('extend_count', '{st.session_state.extend_count}');
         </script>
     """, height=0)
     st.session_state.save_ls = False
@@ -115,6 +118,7 @@ if st.session_state.get('clear_ls'):
         <script>
             localStorage.removeItem('access_token');
             localStorage.removeItem('expire_time');
+            localStorage.removeItem('extend_count');
         </script>
     """, height=0)
     st.session_state.clear_ls = False
@@ -124,7 +128,8 @@ if not st.session_state.local_storage_checked:
     st.markdown("""
         <style>
             div[data-testid="stTextInput"]:has(input[aria-label="hidden_ls_token"]),
-            div[data-testid="stTextInput"]:has(input[aria-label="hidden_ls_expire"]) {
+            div[data-testid="stTextInput"]:has(input[aria-label="hidden_ls_expire"]),
+            div[data-testid="stTextInput"]:has(input[aria-label="hidden_ls_extend"]) {
                 display: none;
             }
         </style>
@@ -132,6 +137,7 @@ if not st.session_state.local_storage_checked:
     
     ls_token = st.text_input("hidden_ls_token", key="ls_token_input", label_visibility="collapsed")
     ls_expire = st.text_input("hidden_ls_expire", key="ls_expire_input", label_visibility="collapsed")
+    ls_extend = st.text_input("hidden_ls_extend", key="ls_extend_input", label_visibility="collapsed")
     
     st.components.v1.html("""
         <script>
@@ -142,11 +148,13 @@ if not st.session_state.local_storage_checked:
             let checkInterval = setInterval(function() {
                 const tokenInput = parentDoc.querySelector('input[aria-label="hidden_ls_token"]');
                 const expireInput = parentDoc.querySelector('input[aria-label="hidden_ls_expire"]');
+                const extendInput = parentDoc.querySelector('input[aria-label="hidden_ls_extend"]');
                 
                 if (tokenInput) {
                     clearInterval(checkInterval);
                     const savedToken = localStorage.getItem('access_token');
                     const savedExpire = localStorage.getItem('expire_time');
+                    const savedExtend = localStorage.getItem('extend_count');
                     
                     if (savedToken && tokenInput.value === "") {
                         let setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
@@ -156,6 +164,10 @@ if not st.session_state.local_storage_checked:
                         if (savedExpire && expireInput) {
                             setter.call(expireInput, savedExpire);
                             expireInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                        if (savedExtend && extendInput) {
+                            setter.call(extendInput, savedExtend);
+                            extendInput.dispatchEvent(new Event('input', { bubbles: true }));
                         }
                     } else if (!savedToken && tokenInput.value === "") {
                         let setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
@@ -179,6 +191,8 @@ if not st.session_state.local_storage_checked:
                 st.session_state.expire_time = datetime.fromisoformat(ls_expire)
             except:
                 pass
+        if ls_extend and ls_extend.isdigit():
+            st.session_state.extend_count = int(ls_extend)
         st.session_state.local_storage_checked = True
         st.rerun()
         
@@ -297,9 +311,10 @@ def show_login_page():
                             except:
                                 pass
 
-                            # 로그인 만료 시간 설정 (관리자 7분, 회원 5분)
-                            expire_mins = 7 if role == 'admin' else 5
+                            # 로그인 만료 시간 설정 (관리자, 회원 모두 10분)
+                            expire_mins = 10
                             st.session_state.expire_time = datetime.now() + timedelta(minutes=expire_mins)
+                            st.session_state.extend_count = 0
 
                             # 로그인 성공 애니메이션 (로고 확대 및 페이드아웃)
                             try:
@@ -785,24 +800,29 @@ def show_membership_card():
         else:
             # [기능 추가] 세션 연장 기능 (백엔드 토큰 갱신 및 프론트 시간 초기화)
             if st.button("extend_hidden_btn", key="extend_session_btn"):
-                headers = {"Authorization": f"Bearer {st.session_state.token}"}
-                try:
-                    res = requests.post(f"{API_URL}/token/refresh", headers=headers)
-                    if res.status_code == 200:
-                        st.session_state.token = res.json()['access_token']
-                        role = st.session_state.member_info.get('role', 'member') if st.session_state.member_info else 'member'
-                        expire_mins = 7 if role == 'admin' else 5
-                        st.session_state.expire_time = datetime.now() + timedelta(minutes=expire_mins)
-                        st.session_state.save_ls = True
-                        st.success("✅ 세션이 성공적으로 연장되었습니다!")
-                        time.sleep(1)
-                        st.rerun()
-                    elif res.status_code == 401:
-                        st.warning("세션이 이미 만료되어 연장할 수 없습니다. 다시 로그인해주세요.")
-                        time.sleep(1.5)
-                        do_logout()
-                except:
-                    pass
+                if st.session_state.extend_count >= 3:
+                    st.warning("연장 횟수(3회)를 초과하여 더 이상 연장할 수 없습니다.")
+                    time.sleep(1.5)
+                    st.rerun()
+                else:
+                    headers = {"Authorization": f"Bearer {st.session_state.token}"}
+                    try:
+                        res = requests.post(f"{API_URL}/token/refresh", headers=headers)
+                        if res.status_code == 200:
+                            st.session_state.token = res.json()['access_token']
+                            expire_mins = 10
+                            st.session_state.expire_time = datetime.now() + timedelta(minutes=expire_mins)
+                            st.session_state.extend_count += 1
+                            st.session_state.save_ls = True
+                            st.success(f"✅ 세션 연장 완료! (남은 연장 횟수: {3 - st.session_state.extend_count}회)")
+                            time.sleep(1)
+                            st.rerun()
+                        elif res.status_code == 401:
+                            st.warning("세션이 이미 만료되어 연장할 수 없습니다. 다시 로그인해주세요.")
+                            time.sleep(1.5)
+                            do_logout()
+                    except:
+                        pass
 
             # 화면 우측 상단에 남은 시간을 표시하고, 시간이 지나면 새로고침하여 로그아웃 처리
             st.components.v1.html(f"""
@@ -841,17 +861,23 @@ def show_membership_card():
                         timerDiv.appendChild(timeSpan);
                         
                         // [추가] 연장하기 버튼 생성
+                        let extendCount = {st.session_state.extend_count};
                         let extendBtn = parentDoc.createElement('button');
-                        extendBtn.innerText = '연장하기';
-                        extendBtn.style.cssText = 'background: #E4D4A4; color: #050A18; border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: pointer; transition: transform 0.1s;';
-                        extendBtn.onmouseover = () => extendBtn.style.transform = 'scale(1.05)';
-                        extendBtn.onmouseout = () => extendBtn.style.transform = 'scale(1)';
-                        extendBtn.onclick = function() {{
-                            // 클릭 시 현재 돔에 있는 파이썬 연결 버튼을 찾아 클릭 이벤트 발생
-                            const currentBtns = Array.from(parentDoc.querySelectorAll('button'));
-                            const currentHiddenBtn = currentBtns.find(b => b.textContent.includes('extend_hidden_btn'));
-                            if (currentHiddenBtn) currentHiddenBtn.click();
-                        }};
+                        if (extendCount >= 3) {{
+                            extendBtn.innerText = '연장 불가';
+                            extendBtn.style.cssText = 'background: rgba(255,255,255,0.2); color: rgba(255,255,255,0.5); border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: not-allowed;';
+                            extendBtn.disabled = true;
+                        }} else {{
+                            extendBtn.innerText = '연장 (' + (3 - extendCount) + '회)';
+                            extendBtn.style.cssText = 'background: #E4D4A4; color: #050A18; border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: pointer; transition: transform 0.1s;';
+                            extendBtn.onmouseover = () => extendBtn.style.transform = 'scale(1.05)';
+                            extendBtn.onmouseout = () => extendBtn.style.transform = 'scale(1)';
+                            extendBtn.onclick = function() {{
+                                const currentBtns = Array.from(parentDoc.querySelectorAll('button'));
+                                const currentHiddenBtn = currentBtns.find(b => b.textContent.includes('extend_hidden_btn'));
+                                if (currentHiddenBtn) currentHiddenBtn.click();
+                            }};
+                        }}
                         timerDiv.appendChild(extendBtn);
                         
                         parentDoc.body.appendChild(timerDiv);
