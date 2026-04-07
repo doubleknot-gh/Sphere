@@ -149,6 +149,21 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+@app.post("/token/refresh", response_model=Token)
+async def refresh_access_token(current_user: Member = Depends(get_current_user)):
+    """
+    [공통] 현재 유효한 토큰을 이용해 만료 시간을 초기화(연장)한 새 토큰 발급
+    """
+    if current_user.role == "admin":
+        expire_minutes = ADMIN_TOKEN_EXPIRE_MINUTES
+    else:
+        expire_minutes = MEMBER_TOKEN_EXPIRE_MINUTES
+        
+    access_token_expires = timedelta(minutes=expire_minutes)
+    access_token = create_access_token(
+        data={"sub": current_user.student_id}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @app.get("/members/me", response_model=MemberInfo)
 async def read_users_me(current_user: Member = Depends(get_current_user)):

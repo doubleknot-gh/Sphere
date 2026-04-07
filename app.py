@@ -95,6 +95,8 @@ if 'token' not in st.session_state:
     st.session_state.token = None
 if 'member_info' not in st.session_state:
     st.session_state.member_info = None
+if 'expire_time' not in st.session_state:
+    st.session_state.expire_time = None
 
 # --- 헬퍼 함수: 회원증 HTML 생성 (재사용 목적) ---
 def get_card_html(info, is_preview=False):
@@ -192,13 +194,20 @@ def show_login_page():
                             
                             # 사용자 이름 가져오기 (환영 메시지용)
                             user_name = ""
+                            role = "member"
                             try:
                                 headers = {"Authorization": f"Bearer {token}"}
                                 me_res = requests.get(f"{API_URL}/members/me", headers=headers)
                                 if me_res.status_code == 200:
-                                    user_name = me_res.json()['name']
+                                    user_info = me_res.json()
+                                    user_name = user_info['name']
+                                    role = user_info.get('role', 'member')
                             except:
                                 pass
+
+                            # 로그인 만료 시간 설정 (관리자 7분, 회원 5분)
+                            expire_mins = 7 if role == 'admin' else 5
+                            st.session_state.expire_time = datetime.now() + timedelta(minutes=expire_mins)
 
                             # 로그인 성공 애니메이션 (로고 확대 및 페이드아웃)
                             try:
@@ -680,6 +689,117 @@ def show_admin_dashboard():
 
 # 2. 디지털 회원증 페이지
 def show_membership_card():
+    # --- 만료 시간 체크 및 자동 로그아웃 (새로고침) ---
+    if st.session_state.get('expire_time'):
+        remaining = (st.session_state.expire_time - datetime.now()).total_seconds()
+        if remaining <= 0:
+            st.warning("세션이 만료되었습니다. 자동으로 로그아웃됩니다.")
+            time.sleep(1)
+            st.session_state.clear()
+            st.rerun()
+            return
+        else:
+            # [기능 추가] 세션 연장 기능 (백엔드 토큰 갱신 및 프론트 시간 초기화)
+            if st.button("extend_hidden_btn", key="extend_session_btn"):
+                headers = {"Authorization": f"Bearer {st.session_state.token}"}
+                try:
+                    res = requests.post(f"{API_URL}/token/refresh", headers=headers)
+                    if res.status_code == 200:
+                        st.session_state.token = res.json()['access_token']
+                        role = st.session_state.member_info.get('role', 'member') if st.session_state.member_info else 'member'
+                        expire_mins = 7 if role == 'admin' else 5
+                        st.session_state.expire_time = datetime.now() + timedelta(minutes=expire_mins)
+                        st.success("✅ 세션이 성공적으로 연장되었습니다!")
+                        time.sleep(1)
+                        st.rerun()
+                    elif res.status_code == 401:
+                        st.warning("세션이 이미 만료되어 연장할 수 없습니다. 다시 로그인해주세요.")
+                        time.sleep(1.5)
+                        st.session_state.clear()
+                        st.rerun()
+                except:
+                    pass
+
+            # 화면 우측 상단에 남은 시간을 표시하고, 시간이 지나면 새로고침하여 로그아웃 처리
+            st.components.v1.html(f"""
+                <script>
+                    const parentDoc = window.parent.document;
+                    const parentWin = window.parent;
+                    let remaining = {int(remaining)};
+                    
+                    // 매번 렌더링될 때마다 실제 파이썬 연장 버튼(extend_hidden_btn)을 화면에서 숨기기 처리
+                    const btns = Array.from(parentDoc.querySelectorAll('button'));
+                    const hiddenBtn = btns.find(b => b.innerText.includes('extend_hidden_btn'));
+                    if (hiddenBtn) {{
+                        const btnContainer = hiddenBtn.closest('.stButton');
+                        if (btnContainer) btnContainer.style.display = 'none';
+                    }}
+
+                    // 기존 타이머 초기화 (중복 방지)
+                    if (parentWin.logoutTimerInterval) {{
+                        parentWin.clearInterval(parentWin.logoutTimerInterval);
+                    }}
+                    
+                    // 타이머 UI 생성 또는 선택
+                    let timerDiv = parentDoc.getElementById('logout-timer');
+                    if (!timerDiv) {{
+                        timerDiv = parentDoc.createElement('div');
+                        timerDiv.id = 'logout-timer';
+                        timerDiv.style.cssText = 'position: fixed; top: 15px; right: 15px; background: rgba(10, 25, 47, 0.8); border: 1px solid rgba(228, 212, 164, 0.4); padding: 8px 15px; border-radius: 8px; color: #E4D4A4; font-weight: bold; z-index: 999999; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-family: monospace; font-size: 1.1rem; backdrop-filter: blur(5px); transition: color 0.3s, border-color 0.3s; display: flex; align-items: center; gap: 12px;';
+                        
+                        // 시간 표시 영역
+                        let timeSpan = parentDoc.createElement('span');
+                        timeSpan.id = 'logout-time-span';
+                        timerDiv.appendChild(timeSpan);
+                        
+                        // [추가] 연장하기 버튼 생성
+                        let extendBtn = parentDoc.createElement('button');
+                        extendBtn.innerText = '연장하기';
+                        extendBtn.style.cssText = 'background: #E4D4A4; color: #050A18; border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: pointer; transition: transform 0.1s;';
+                        extendBtn.onmouseover = () => extendBtn.style.transform = 'scale(1.05)';
+                        extendBtn.onmouseout = () => extendBtn.style.transform = 'scale(1)';
+                        extendBtn.onclick = function() {{
+                            // 클릭 시 현재 돔에 있는 파이썬 연결 버튼을 찾아 클릭 이벤트 발생
+                            const currentBtns = Array.from(parentDoc.querySelectorAll('button'));
+                            const currentHiddenBtn = currentBtns.find(b => b.innerText.includes('extend_hidden_btn'));
+                            if (currentHiddenBtn) currentHiddenBtn.click();
+                        }};
+                        timerDiv.appendChild(extendBtn);
+                        
+                        parentDoc.body.appendChild(timerDiv);
+                    }}
+                    
+                    let timeSpan = parentDoc.getElementById('logout-time-span');
+
+                    function updateTimer() {{
+                        if (remaining <= 0) {{
+                            parentWin.clearInterval(parentWin.logoutTimerInterval);
+                            if (timeSpan) timeSpan.innerText = '⏱️ 00:00';
+                            parentWin.location.reload();
+                            return;
+                        }}
+                        
+                        let m = Math.floor(remaining / 60);
+                        let s = Math.floor(remaining % 60);
+                        if (timeSpan) timeSpan.innerText = '⏱️ ' + (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+                        
+                        // 1분 이하로 남으면 빨간색으로 경고 표시
+                        if (remaining <= 60) {{
+                            timerDiv.style.color = '#ff4b4b';
+                            timerDiv.style.borderColor = '#ff4b4b';
+                        }} else {{
+                            timerDiv.style.color = '#E4D4A4';
+                            timerDiv.style.borderColor = 'rgba(228, 212, 164, 0.4)';
+                        }}
+                        
+                        remaining--;
+                    }}
+                    
+                    updateTimer(); // 즉시 실행
+                    parentWin.logoutTimerInterval = parentWin.setInterval(updateTimer, 1000);
+                </script>
+            """, height=0)
+
     # 토큰을 사용하여 회원 정보 가져오기
     if st.session_state.member_info is None:
         headers = {"Authorization": f"Bearer {st.session_state.token}"}
@@ -769,6 +889,17 @@ def show_membership_card():
 # --- 메인 실행 로직 ---
 
 if st.session_state.token is None:
+    # 로그아웃 상태일 때, 떠 있는 타이머가 남아있다면 깔끔하게 제거
+    st.components.v1.html("""
+        <script>
+            const parentDoc = window.parent.document;
+            const timerDiv = parentDoc.getElementById('logout-timer');
+            if (timerDiv) timerDiv.remove();
+            if (window.parent.logoutTimerInterval) {
+                window.parent.clearInterval(window.parent.logoutTimerInterval);
+            }
+        </script>
+    """, height=0)
     show_login_page()
 else:
     show_membership_card()
