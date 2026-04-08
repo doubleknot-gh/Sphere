@@ -234,9 +234,6 @@ def get_card_html(info, is_preview=False):
     except FileNotFoundError:
         pass
 
-    # 미리보기 모드일 경우 시간 ID를 다르게 설정하여 충돌 방지
-    time_id = "real-time-preview" if is_preview else "real-time"
-    
     # 소속 동아리가 여러 개일 경우 (콤마 구분), 쉼표를 없애고 각각 간격을 두어 옆으로 나열
     raw_club = info.get('club')
     raw_club = raw_club if raw_club else '소속 없음'
@@ -264,9 +261,6 @@ def get_card_html(info, is_preview=False):
             </div>
             <div class="card-footer">
                 <p class="club">{club_html}</p>
-                <div class="time" id="{time_id}">
-                    {datetime.now().strftime('%Y. %m. %d.') if is_preview else ''}
-                </div>
             </div>
         </div>
     """
@@ -724,7 +718,6 @@ def show_admin_dashboard():
             if target_member:
                 with st.expander("💳 회원증 미리보기 (디자인 확인용)", expanded=False):
                     st.markdown(get_card_html(target_member, is_preview=True), unsafe_allow_html=True)
-                    st.caption("※ 미리보기에서는 실시간 초 단위 시간이 표시되지 않을 수 있습니다.")
 
         st.markdown("---")
         st.subheader("소속 동아리 변경")
@@ -1011,24 +1004,6 @@ def show_membership_card():
     # [수정] 공통 함수 사용하여 회원증 렌더링
     st.markdown(get_card_html(info), unsafe_allow_html=True)
 
-    # 실시간 시간 표시 스크립트
-    st.components.v1.html("""
-        <script>
-            function updateTime() {
-                const timeElement = parent.document.getElementById('real-time');
-                if (timeElement) {
-                    const now = new Date();
-                    const timeString = now.toLocaleDateString('ko-KR') + ' ' + now.toLocaleTimeString('ko-KR');
-                    timeElement.innerText = '실시간 서버 시간: ' + timeString;
-                }
-            }
-            // 1초마다 시간 업데이트
-            setInterval(updateTime, 1000);
-            // 페이지 로드 시 즉시 시간 표시
-            updateTime();
-        </script>
-    """, height=0)
-    
     # 비밀번호 변경 기능
     with st.expander("비밀번호 변경"):
         with st.form("password_change_form", clear_on_submit=True):
