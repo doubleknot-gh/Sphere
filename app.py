@@ -851,6 +851,16 @@ def show_membership_card():
             return
         else:
             # [기능 추가] 세션 연장 기능 (백엔드 토큰 갱신 및 프론트 시간 초기화)
+            st.markdown("""
+                <style>
+                    /* 파이썬 연장 버튼이 화면에 보이지 않도록 CSS로 완벽하게 숨김 (깜빡임 방지) */
+                    div[data-testid="stElementContainer"]:has(.hide-extend-btn) { display: none; }
+                    div[data-testid="stElementContainer"]:has(.hide-extend-btn) + div[data-testid="stElementContainer"] { 
+                        position: absolute !important; opacity: 0 !important; z-index: -1 !important; 
+                    }
+                </style>
+                <div class="hide-extend-btn"></div>
+            """, unsafe_allow_html=True)
             if st.button("extend_hidden_btn", key="extend_session_btn"):
                 if st.session_state.extend_count < 3:
                     headers = {"Authorization": f"Bearer {st.session_state.token}"}
