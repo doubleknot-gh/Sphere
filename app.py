@@ -800,26 +800,17 @@ def show_membership_card():
         else:
             # [기능 추가] 세션 연장 기능 (백엔드 토큰 갱신 및 프론트 시간 초기화)
             if st.button("extend_hidden_btn", key="extend_session_btn"):
-                if st.session_state.extend_count >= 3:
-                    st.warning("연장 횟수(3회)를 초과하여 더 이상 연장할 수 없습니다.")
-                    time.sleep(1.5)
-                    st.rerun()
-                else:
+                if st.session_state.extend_count < 3:
                     headers = {"Authorization": f"Bearer {st.session_state.token}"}
                     try:
                         res = requests.post(f"{API_URL}/token/refresh", headers=headers)
                         if res.status_code == 200:
                             st.session_state.token = res.json()['access_token']
-                            expire_mins = 10
-                            st.session_state.expire_time = datetime.now() + timedelta(minutes=expire_mins)
+                            st.session_state.expire_time = datetime.now() + timedelta(minutes=10)
                             st.session_state.extend_count += 1
                             st.session_state.save_ls = True
-                            st.success(f"✅ 세션 연장 완료! (남은 연장 횟수: {3 - st.session_state.extend_count}회)")
-                            time.sleep(1)
                             st.rerun()
                         elif res.status_code == 401:
-                            st.warning("세션이 이미 만료되어 연장할 수 없습니다. 다시 로그인해주세요.")
-                            time.sleep(1.5)
                             do_logout()
                     except:
                         pass
@@ -860,30 +851,38 @@ def show_membership_card():
                         timeSpan.id = 'logout-time-span';
                         timerDiv.appendChild(timeSpan);
                         
-                        // [추가] 연장하기 버튼 생성
-                        let extendCount = {st.session_state.extend_count};
-                        let extendBtn = parentDoc.createElement('button');
-                        if (extendCount >= 3) {{
-                            extendBtn.innerText = '연장 불가';
-                            extendBtn.style.cssText = 'background: rgba(255,255,255,0.2); color: rgba(255,255,255,0.5); border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: not-allowed;';
-                            extendBtn.disabled = true;
-                        }} else {{
-                            extendBtn.innerText = '연장 (' + (3 - extendCount) + '회)';
-                            extendBtn.style.cssText = 'background: #E4D4A4; color: #050A18; border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: pointer; transition: transform 0.1s;';
-                            extendBtn.onmouseover = () => extendBtn.style.transform = 'scale(1.05)';
-                            extendBtn.onmouseout = () => extendBtn.style.transform = 'scale(1)';
-                            extendBtn.onclick = function() {{
-                                const currentBtns = Array.from(parentDoc.querySelectorAll('button'));
-                                const currentHiddenBtn = currentBtns.find(b => b.textContent.includes('extend_hidden_btn'));
-                                if (currentHiddenBtn) currentHiddenBtn.click();
-                            }};
-                        }}
-                        timerDiv.appendChild(extendBtn);
-                        
                         parentDoc.body.appendChild(timerDiv);
                     }}
                     
                     let timeSpan = parentDoc.getElementById('logout-time-span');
+
+                    // 연장 버튼 (렌더링될 때마다 남은 횟수 텍스트 새로고침)
+                    let extendBtn = parentDoc.getElementById('extend-session-btn');
+                    if (!extendBtn) {{
+                        extendBtn = parentDoc.createElement('button');
+                        extendBtn.id = 'extend-session-btn';
+                        timerDiv.appendChild(extendBtn);
+                    }}
+
+                    let extendCount = {st.session_state.extend_count};
+                    if (extendCount >= 3) {{
+                        extendBtn.innerText = '연장 불가';
+                        extendBtn.style.cssText = 'background: rgba(255,255,255,0.2); color: rgba(255,255,255,0.5); border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: not-allowed;';
+                        extendBtn.disabled = true;
+                    }} else {{
+                        extendBtn.innerText = '연장 (' + (3 - extendCount) + '회)';
+                        extendBtn.style.cssText = 'background: #E4D4A4; color: #050A18; border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: pointer; transition: transform 0.1s;';
+                        extendBtn.disabled = false;
+                        extendBtn.onmouseover = () => extendBtn.style.transform = 'scale(1.05)';
+                        extendBtn.onmouseout = () => extendBtn.style.transform = 'scale(1)';
+                        extendBtn.onclick = function() {{
+                            extendBtn.innerText = '연장 중...';
+                            extendBtn.disabled = true;
+                            const currentBtns = Array.from(parentDoc.querySelectorAll('button'));
+                            const currentHiddenBtn = currentBtns.find(b => b.textContent.includes('extend_hidden_btn'));
+                            if (currentHiddenBtn) currentHiddenBtn.click();
+                        }};
+                    }}
 
                     function updateTimer() {{
                         if (remaining <= 0) {{
