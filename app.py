@@ -106,9 +106,9 @@ if 'extend_count' not in st.session_state:
 if st.session_state.get('save_ls'):
     st.components.v1.html(f"""
         <script>
-            localStorage.setItem('access_token', '{st.session_state.token}');
-            localStorage.setItem('expire_time', '{st.session_state.expire_time.isoformat() if st.session_state.expire_time else ""}');
-            localStorage.setItem('extend_count', '{st.session_state.extend_count}');
+            window.parent.localStorage.setItem('access_token', '{st.session_state.token}');
+            window.parent.localStorage.setItem('expire_time', '{st.session_state.expire_time.isoformat() if st.session_state.expire_time else ""}');
+            window.parent.localStorage.setItem('extend_count', '{st.session_state.extend_count}');
         </script>
     """, height=0)
     st.session_state.save_ls = False
@@ -116,9 +116,9 @@ if st.session_state.get('save_ls'):
 if st.session_state.get('clear_ls'):
     st.components.v1.html("""
         <script>
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('expire_time');
-            localStorage.removeItem('extend_count');
+            window.parent.localStorage.removeItem('access_token');
+            window.parent.localStorage.removeItem('expire_time');
+            window.parent.localStorage.removeItem('extend_count');
         </script>
     """, height=0)
     st.session_state.clear_ls = False
@@ -152,9 +152,9 @@ if not st.session_state.local_storage_checked:
                 
                 if (tokenInput) {
                     clearInterval(checkInterval);
-                    const savedToken = localStorage.getItem('access_token');
-                    const savedExpire = localStorage.getItem('expire_time');
-                    const savedExtend = localStorage.getItem('extend_count');
+                    const savedToken = window.parent.localStorage.getItem('access_token');
+                    const savedExpire = window.parent.localStorage.getItem('expire_time');
+                    const savedExtend = window.parent.localStorage.getItem('extend_count');
                     
                     if (savedToken && tokenInput.value === "") {
                         let setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
@@ -941,8 +941,10 @@ def show_membership_card():
                             extendBtn.innerText = '연장 중...';
                             extendBtn.disabled = true;
                             const currentBtns = Array.from(parentDoc.querySelectorAll('button'));
-                            const currentHiddenBtn = currentBtns.find(b => b.textContent.includes('extend_hidden_btn'));
-                            if (currentHiddenBtn) currentHiddenBtn.click();
+                            const currentHiddenBtns = currentBtns.filter(b => b.textContent.includes('extend_hidden_btn'));
+                            if (currentHiddenBtns.length > 0) {{
+                                currentHiddenBtns[currentHiddenBtns.length - 1].click();
+                            }}
                         }};
                     }}
 
