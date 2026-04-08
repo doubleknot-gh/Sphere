@@ -204,6 +204,25 @@ def do_logout():
     st.session_state.local_storage_checked = True
     st.rerun()
 
+# --- 헬퍼 함수: 분과 및 동아리 매핑 ---
+CLUB_DIVISIONS = {
+    "예술음악분과": ["LACOV", "한울", "딕트", "스타피쉬", "JB", "한사랑 오케스트라", "백우회", "거트", "우서", "어쿠스틱스"],
+    "창업학술분과": ["유토피아", "소란", "PSM", "제5세대", "리더", "우하오"],
+    "취미교양분과": ["왓치", "가비", "산악부", "FOCUS", "두점머리", "워너비", "만화마을", "0AE"],
+    "봉사종교분과": ["JYM", "CCC", "뉴라이프", "로타랙트", "LEO", "필리아", "Team911"],
+    "체육레저분과": ["K.B", "아웃사이더", "보디가드", "팬서스", "RELAX", "SPLASH", "KUBIC", "건무회"]
+}
+
+def get_division(club_name):
+    if not club_name: return "미분류"
+    club_upper = str(club_name).strip().upper()
+    for div, clubs in CLUB_DIVISIONS.items():
+        if any(c.upper() == club_upper for c in clubs):
+            return div
+    if club_upper in ["총동아리연합회"]:
+        return "학생자치기구"
+    return "미분류"
+
 # --- 헬퍼 함수: 회원증 HTML 생성 (재사용 목적) ---
 def get_card_html(info, is_preview=False):
     # KU 로고 이미지 로드
@@ -439,10 +458,26 @@ def show_admin_dashboard():
                     if c.strip(): all_clubs.add(c.strip())
             all_clubs = sorted(list(all_clubs))
             
-            selected_clubs = st.multiselect("동아리별 보기", options=all_clubs, placeholder="전체 동아리")
+            # [기능 추가] 분과 필터링 적용
+            available_divisions = sorted(list(set(get_division(c) for c in all_clubs)))
             
+            col_div, col_club = st.columns(2)
+            with col_div:
+                selected_division = st.selectbox("분과별 보기", options=["전체 분과"] + available_divisions)
+            
+            filtered_clubs_by_div = all_clubs
+            if selected_division != "전체 분과":
+                filtered_clubs_by_div = [c for c in all_clubs if get_division(c) == selected_division]
+                
+            with col_club:
+                selected_clubs = st.multiselect("동아리별 보기", options=filtered_clubs_by_div, placeholder="해당 분과의 전체 동아리")
+                
+            # 필터링 적용
             if selected_clubs:
                 mask = df['club'].apply(lambda x: any(c in [cs.strip() for cs in str(x).split(',')] for c in selected_clubs) if pd.notnull(x) else False)
+                df = df[mask]
+            elif selected_division != "전체 분과":
+                mask = df['club'].apply(lambda x: any(get_division(c.strip()) == selected_division for c in str(x).split(',')) if pd.notnull(x) else False)
                 df = df[mask]
 
             # [기능 추가] 엑셀(CSV) 다운로드 버튼 (필터링된 결과 반영)
@@ -459,9 +494,11 @@ def show_admin_dashboard():
             df_display['club'] = df_display['club'].apply(lambda x: [c.strip() for c in str(x).split(',')] if pd.notnull(x) and str(x).strip() else ["소속없음"])
             df_display = df_display.explode('club')
             
-            # 필터가 선택된 상태라면 선택한 동아리 행만 화면에 표시
+            # 필터가 선택된 상태라면 선택한 동아리(또는 분과) 행만 화면에 표시
             if selected_clubs:
                 df_display = df_display[df_display['club'].isin(selected_clubs)]
+            elif selected_division != "전체 분과":
+                df_display = df_display[df_display['club'].apply(lambda c: get_division(c) == selected_division)]
 
             # 선택 컬럼 추가 (화면 표시용)
             df_display.insert(0, "선택", False)
@@ -618,9 +655,25 @@ def show_admin_dashboard():
                     if c.strip(): all_clubs_tab4.add(c.strip())
             all_clubs_tab4 = sorted(list(all_clubs_tab4))
             
-            selected_club_tab4 = st.selectbox("동아리 필터", options=["전체 동아리"] + all_clubs_tab4)
+            # [기능 추가] 개별 회원 관리에도 분과 필터 연동
+            available_divisions_tab4 = sorted(list(set(get_division(c) for c in all_clubs_tab4)))
             
+            col_div_4, col_club_4 = st.columns(2)
+            with col_div_4:
+                selected_division_tab4 = st.selectbox("분과 필터", options=["전체 분과"] + available_divisions_tab4)
+            
+            filtered_clubs_tab4 = all_clubs_tab4
+            if selected_division_tab4 != "전체 분과":
+                filtered_clubs_tab4 = [c for c in all_clubs_tab4 if get_division(c) == selected_division_tab4]
+                
+            with col_club_4:
+                selected_club_tab4 = st.selectbox("동아리 필터", options=["전체 동아리"] + filtered_clubs_tab4)
+                
             filtered_members = st.session_state.admin_member_list
+            
+            if selected_division_tab4 != "전체 분과":
+                filtered_members = [m for m in filtered_members if any(get_division(c.strip()) == selected_division_tab4 for c in (m.get('club') or "").split(','))]
+                
             if selected_club_tab4 != "전체 동아리":
                 filtered_members = [m for m in filtered_members if selected_club_tab4 in [c.strip() for c in (m.get('club') or "").split(',')]]
             
@@ -644,6 +697,12 @@ def show_admin_dashboard():
                         # 특정 동아리를 필터링한 경우 해당 동아리 이름으로만 표시
                         label = f"[{selected_club_tab4}] {m['name']} ({m['student_id']})"
                         member_dict[label] = m['student_id']
+                    elif selected_division_tab4 != "전체 분과":
+                        # 분과 필터만 적용된 경우, 해당 분과의 동아리만 표시
+                        for c in clubs:
+                            if get_division(c) == selected_division_tab4:
+                                label = f"[{c}] {m['name']} ({m['student_id']})"
+                                member_dict[label] = m['student_id']
                     else:
                         # 전체 동아리일 경우, 각각의 동아리별로 개별 항목 생성
                         for c in clubs:
