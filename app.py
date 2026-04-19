@@ -993,7 +993,15 @@ def show_membership_card():
                                 extendBtn.onmouseout = () => extendBtn.style.transform = 'scale(1)';
                                 
                                 extendBtn.onclick = function() {
-                                    extendBtn.innerText = '연장 중...';
+                                    // [수정] 버튼 글씨도 낙관적 업데이트 적용 ('연장 중...' 생략하고 즉시 남은 횟수 표시)
+                                    let nextCount = extendCountFromPython + 1;
+                                    if (nextCount >= 3) {
+                                        extendBtn.innerText = '연장 불가';
+                                        extendBtn.style.cssText = 'background: rgba(255,255,255,0.2); color: rgba(255,255,255,0.5); border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: not-allowed;';
+                                    } else {
+                                        extendBtn.innerText = '연장 (' + (3 - nextCount) + '회)';
+                                    }
+
                                     extendBtn.disabled = true;
                                     extendBtn.setAttribute('data-loading', 'true');
                                   
