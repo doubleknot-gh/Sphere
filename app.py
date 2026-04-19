@@ -851,13 +851,13 @@ def show_membership_card():
             do_logout()
             return
         else:
-                    # [수정] 프론트엔드 JS가 최신 연장 상태를 즉시 감지할 수 있도록 데이터 요소 삽입
-                    st.markdown(f"""
-                        <div id="session-data" style="display: none;" 
-                             data-remaining="{int(remaining)}" 
-                             data-extend="{st.session_state.extend_count}">
-                        </div>
-                    """, unsafe_allow_html=True)
+            # [수정] 프론트엔드 JS가 최신 연장 상태를 즉시 감지할 수 있도록 데이터 요소 삽입
+            st.markdown(f"""
+                <div id="session-data" style="display: none;" 
+                     data-remaining="{int(remaining)}" 
+                     data-extend="{st.session_state.extend_count}">
+                </div>
+            """, unsafe_allow_html=True)
 
             st.markdown("""
                 <style>
