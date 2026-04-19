@@ -1,3 +1,10 @@
+/* --- 프리텐다드(Pretendard) 웹 폰트 적용 --- */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+
+html, body, [class*="css"], p, span, h1, h2, h3, h4, h5, h6 {
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif !important;
+}
+
 /* 1. 전체 배경색을 로고 바탕색과 일치 */
 [data-testid="stAppViewContainer"] {
     background-color: #050A18 !important;
@@ -60,6 +67,13 @@ input::placeholder {
     justify-content: space-between;
     animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
     overflow: hidden;
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+/* 카드 호버(Hover) 시 살짝 떠오르는 3D 효과 */
+.membership-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 20px rgba(228, 212, 164, 0.15), inset 0 0 0 1px rgba(228, 212, 164, 0.3);
 }
 
 /* 배경 장식 (은은한 빛) */
@@ -73,6 +87,26 @@ input::placeholder {
     background: radial-gradient(circle, rgba(228, 212, 164, 0.1) 0%, transparent 60%);
     transform: rotate(45deg);
     pointer-events: none;
+}
+
+/* 빛 반사(Shine) 효과 애니메이션 */
+.membership-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -150%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
+    transform: skewX(-25deg);
+    transition: all 0.7s ease;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.membership-card:hover::after {
+    left: 150%;
+    transition: all 0.7s ease;
 }
 
 .card-header {
