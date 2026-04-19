@@ -851,7 +851,14 @@ def show_membership_card():
             do_logout()
             return
         else:
-            # [기능 추가] 세션 연장 기능 (백엔드 토큰 갱신 및 프론트 시간 초기화)
+                    # [수정] 프론트엔드 JS가 최신 연장 상태를 즉시 감지할 수 있도록 데이터 요소 삽입
+                    st.markdown(f"""
+                        <div id="session-data" style="display: none;" 
+                             data-remaining="{int(remaining)}" 
+                             data-extend="{st.session_state.extend_count}">
+                        </div>
+                    """, unsafe_allow_html=True)
+
             st.markdown("""
                 <style>
                     /* 파이썬 연장 버튼이 화면에 보이지 않도록 CSS로 완벽하게 숨김 (깜빡임 방지) */
@@ -879,32 +886,26 @@ def show_membership_card():
                         pass
 
             # 화면 우측 상단에 남은 시간을 표시하고, 시간이 지나면 새로고침하여 로그아웃 처리
-            st.components.v1.html(f"""
+            st.components.v1.html("""
                 <script>
                     const parentDoc = window.parent.document;
                     const parentWin = window.parent;
-                    let remaining = {int(remaining)};
                     
                     // 매번 렌더링될 때마다 실제 파이썬 연장 버튼(extend_hidden_btn)을 화면에서 숨기기 처리
                     const btns = Array.from(parentDoc.querySelectorAll('button'));
                     const hiddenBtn = btns.find(b => b.textContent.includes('extend_hidden_btn'));
-                    if (hiddenBtn) {{
+                    if (hiddenBtn) {
                         const btnContainer = hiddenBtn.closest('.stButton');
-                        if (btnContainer) {{
+                        if (btnContainer) {
                             btnContainer.style.position = 'absolute';
                             btnContainer.style.opacity = '0';
                             btnContainer.style.zIndex = '-1';
-                        }}
-                    }}
+                        }
+                    }
 
-                    // 기존 타이머 초기화 (중복 방지)
-                    if (parentWin.logoutTimerInterval) {{
-                        parentWin.clearInterval(parentWin.logoutTimerInterval);
-                    }}
-                    
                     // 타이머 UI 생성 또는 선택
                     let timerDiv = parentDoc.getElementById('logout-timer');
-                    if (!timerDiv) {{
+                    if (!timerDiv) {
                         timerDiv = parentDoc.createElement('div');
                         timerDiv.id = 'logout-timer';
                         timerDiv.style.cssText = 'position: fixed; top: 15px; right: 15px; background: rgba(10, 25, 47, 0.8); border: 1px solid rgba(228, 212, 164, 0.4); padding: 8px 15px; border-radius: 8px; color: #E4D4A4; font-weight: bold; z-index: 999999; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-family: monospace; font-size: 1.1rem; backdrop-filter: blur(5px); transition: color 0.3s, border-color 0.3s; display: flex; align-items: center; gap: 12px;';
@@ -914,64 +915,97 @@ def show_membership_card():
                         timeSpan.id = 'logout-time-span';
                         timerDiv.appendChild(timeSpan);
                         
-                        parentDoc.body.appendChild(timerDiv);
-                    }}
-                    
-                    let timeSpan = parentDoc.getElementById('logout-time-span');
-
-                    // 연장 버튼 (렌더링될 때마다 남은 횟수 텍스트 새로고침)
-                    let extendBtn = parentDoc.getElementById('extend-session-btn');
-                    if (!extendBtn) {{
-                        extendBtn = parentDoc.createElement('button');
+                        let extendBtn = parentDoc.createElement('button');
                         extendBtn.id = 'extend-session-btn';
                         timerDiv.appendChild(extendBtn);
-                    }}
 
-                    let extendCount = {st.session_state.extend_count};
-                    if (extendCount >= 3) {{
-                        extendBtn.innerText = '연장 불가';
-                        extendBtn.style.cssText = 'background: rgba(255,255,255,0.2); color: rgba(255,255,255,0.5); border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: not-allowed;';
-                        extendBtn.disabled = true;
-                    }} else {{
-                        extendBtn.innerText = '연장 (' + (3 - extendCount) + '회)';
-                        extendBtn.style.cssText = 'background: #E4D4A4; color: #050A18; border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: pointer; transition: transform 0.1s;';
-                        extendBtn.disabled = false;
-                        extendBtn.onmouseover = () => extendBtn.style.transform = 'scale(1.05)';
-                        extendBtn.onmouseout = () => extendBtn.style.transform = 'scale(1)';
-                        extendBtn.onclick = function() {{
-                            extendBtn.innerText = '연장 중...';
-                            extendBtn.disabled = true;
-                            const currentBtns = Array.from(parentDoc.querySelectorAll('button'));
-                            const currentHiddenBtns = currentBtns.filter(b => b.textContent.includes('extend_hidden_btn'));
-                            if (currentHiddenBtns.length > 0) {{
-                                currentHiddenBtns[currentHiddenBtns.length - 1].click();
-                            }}
-                        }};
-                    }}
+                        parentDoc.body.appendChild(timerDiv);
+                    }
+                    
+                    // 기존 타이머 초기화 (중복 실행 방지)
+                    if (parentWin.logoutTimerInterval) {
+                        parentWin.clearInterval(parentWin.logoutTimerInterval);
+                    }
+                    
+                    // JS 내부 타이머 상태 변수 (첫 실행 시 설정)
+                    if (typeof parentWin.currentTargetTime === 'undefined') {
+                        parentWin.currentTargetTime = null;
+                        parentWin.lastSeenExtendCount = -1;
+                    }
 
-                    function updateTimer() {{
-                        if (remaining <= 0) {{
+                    function updateTimer() {
+                        // 파이썬에서 렌더링한 최신 데이터 요소를 찾음
+                        const dataDiv = parentDoc.getElementById('session-data');
+                        if (!dataDiv) return;
+                        
+                        const remainingFromPython = parseInt(dataDiv.getAttribute('data-remaining'));
+                        const extendCountFromPython = parseInt(dataDiv.getAttribute('data-extend'));
+                        
+                        let extendBtn = parentDoc.getElementById('extend-session-btn');
+                        
+                        // 페이지 첫 로드이거나 파이썬 측 연장 횟수가 증가했다면 타겟 시간(종료 시점) 재설정
+                        if (parentWin.currentTargetTime === null || extendCountFromPython !== parentWin.lastSeenExtendCount) {
+                            parentWin.currentTargetTime = Date.now() + remainingFromPython * 1000;
+                            parentWin.lastSeenExtendCount = extendCountFromPython;
+                            
+                            // 로딩 상태 해제
+                            if (extendBtn && extendBtn.getAttribute('data-loading') === 'true') {
+                                extendBtn.removeAttribute('data-loading');
+                            }
+                        }
+                        
+                        // 목표 종료 시점을 기준으로 실시간 남은 시간 계산
+                        let remaining = Math.floor((parentWin.currentTargetTime - Date.now()) / 1000);
+                        
+                        let timeSpan = parentDoc.getElementById('logout-time-span');
+                        
+                        if (remaining <= 0) {
                             parentWin.clearInterval(parentWin.logoutTimerInterval);
                             if (timeSpan) timeSpan.innerText = '⏱️ 00:00';
                             parentWin.location.reload();
                             return;
-                        }}
+                        }
                         
                         let m = Math.floor(remaining / 60);
                         let s = Math.floor(remaining % 60);
                         if (timeSpan) timeSpan.innerText = '⏱️ ' + (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
                         
                         // 1분 이하로 남으면 빨간색으로 경고 표시
-                        if (remaining <= 60) {{
+                        if (remaining <= 60) {
                             timerDiv.style.color = '#ff4b4b';
                             timerDiv.style.borderColor = '#ff4b4b';
-                        }} else {{
+                        } else {
                             timerDiv.style.color = '#E4D4A4';
                             timerDiv.style.borderColor = 'rgba(228, 212, 164, 0.4)';
-                        }}
+                        }
                         
-                        remaining--;
-                    }}
+                        // 연장 중일 때는 텍스트 덮어쓰기 방지
+                        if (extendBtn && extendBtn.getAttribute('data-loading') !== 'true') {
+                            if (extendCountFromPython >= 3) {
+                                extendBtn.innerText = '연장 불가';
+                                extendBtn.style.cssText = 'background: rgba(255,255,255,0.2); color: rgba(255,255,255,0.5); border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: not-allowed;';
+                                extendBtn.disabled = true;
+                            } else {
+                                extendBtn.innerText = '연장 (' + (3 - extendCountFromPython) + '회)';
+                                extendBtn.style.cssText = 'background: #E4D4A4; color: #050A18; border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: pointer; transition: transform 0.1s;';
+                                extendBtn.disabled = false;
+                                extendBtn.onmouseover = () => extendBtn.style.transform = 'scale(1.05)';
+                                extendBtn.onmouseout = () => extendBtn.style.transform = 'scale(1)';
+                                
+                                extendBtn.onclick = function() {
+                                    extendBtn.innerText = '연장 중...';
+                                    extendBtn.disabled = true;
+                                    extendBtn.setAttribute('data-loading', 'true');
+                                    
+                                    const currentBtns = Array.from(parentDoc.querySelectorAll('button'));
+                                    const currentHiddenBtns = currentBtns.filter(b => b.textContent.includes('extend_hidden_btn'));
+                                    if (currentHiddenBtns.length > 0) {
+                                        currentHiddenBtns[currentHiddenBtns.length - 1].click();
+                                    }
+                                };
+                            }
+                        }
+                    }
                     
                     updateTimer(); // 즉시 실행
                     parentWin.logoutTimerInterval = parentWin.setInterval(updateTimer, 1000);
@@ -1058,6 +1092,8 @@ if st.session_state.token is None:
             if (window.parent.logoutTimerInterval) {
                 window.parent.clearInterval(window.parent.logoutTimerInterval);
             }
+                    window.parent.currentTargetTime = null;
+                    window.parent.lastSeenExtendCount = -1;
         </script>
     """, height=0)
     show_login_page()
