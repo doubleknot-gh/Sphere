@@ -36,6 +36,15 @@ def local_css(file_name):
 
 local_css("style.css")
 
+# --- 이미지 로딩 캐싱 (매 렌더링마다 파일 읽기 방지) ---
+@st.cache_data
+def load_base64_image(file_path):
+    try:
+        with open(file_path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except FileNotFoundError:
+        return ""
+
 # --- 파티클 배경 효과 (CSS + Python) ---
 def add_particle_effect():
     particles_html = ""
@@ -227,12 +236,9 @@ def get_division(club_name):
 def get_card_html(info, is_preview=False):
     # KU 로고 이미지 로드
     ku_logo_html = ""
-    try:
-        with open("ku logo.png", "rb") as f:
-            encoded_ku = base64.b64encode(f.read()).decode()
-            ku_logo_html = f'<img src="data:image/png;base64,{encoded_ku}" style="width: 50px; margin-top: 5px;">'
-    except FileNotFoundError:
-        pass
+    encoded_ku = load_base64_image("ku logo.png")
+    if encoded_ku:
+        ku_logo_html = f'<img src="data:image/png;base64,{encoded_ku}" style="width: 50px; margin-top: 5px;">'
 
     # 소속 동아리가 여러 개일 경우 (콤마 구분), 쉼표를 없애고 각각 간격을 두어 옆으로 나열
     raw_club = info.get('club')
@@ -283,11 +289,10 @@ def show_login_page():
         c1, c2, c3 = st.columns([1, 2, 1])
         with c2:
             # 로고에 애니메이션 클래스 적용을 위해 HTML로 렌더링
-            try:
-                with open("logo.png", "rb") as f:
-                    encoded_logo = base64.b64encode(f.read()).decode()
-                    st.markdown(f'<img src="data:image/png;base64,{encoded_logo}" class="login-logo">', unsafe_allow_html=True)
-            except FileNotFoundError:
+            encoded_logo = load_base64_image("logo.png")
+            if encoded_logo:
+                st.markdown(f'<img src="data:image/png;base64,{encoded_logo}" class="login-logo">', unsafe_allow_html=True)
+            else:
                 st.image(logo_image, use_container_width=True)
         
         st.markdown("<h1 style='text-align: center; margin-bottom: 40px;'>MEMBER LOGIN</h1>", unsafe_allow_html=True)
@@ -331,15 +336,14 @@ def show_login_page():
 
                             # 로그인 성공 애니메이션 (로고 확대 및 페이드아웃)
                             try:
-                                with open("logo.png", "rb") as f:
-                                    anim_logo = base64.b64encode(f.read()).decode()
-                                
                                 welcome_html = ""
                                 if user_name:
                                     welcome_html = f"<h2 style='color: #E4D4A4; margin-top: 20px; font-size: 2rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.5); animation: fadeInUp 0.5s ease-out;'>환영합니다, {user_name}님!</h2>"
 
                                 # [수정] 폼 내부가 아닌 외부 placeholder에 애니메이션 렌더링
                                 with animation_placeholder:
+                                    anim_logo = load_base64_image("logo.png")
+                                    img_tag = f'<img src="data:image/png;base64,{anim_logo}" style="width: 200px; animation: zoomOutLogo 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards;">' if anim_logo else ""
                                     st.markdown(f"""
                                         <div style="
                                             position: fixed;
@@ -353,10 +357,7 @@ def show_login_page():
                                             align-items: center;
                                             animation: fadeOutOverlay 0.8s forwards;
                                         ">
-                                            <img src="data:image/png;base64,{anim_logo}" style="
-                                                width: 200px;
-                                                animation: zoomOutLogo 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards;
-                                            ">
+                                            {img_tag}
                                             {welcome_html}
                                         </div>
                                         <style>
