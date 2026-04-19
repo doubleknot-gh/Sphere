@@ -996,6 +996,16 @@ def show_membership_card():
                                     extendBtn.innerText = '연장 중...';
                                     extendBtn.disabled = true;
                                     extendBtn.setAttribute('data-loading', 'true');
+                                  
+                                  // [추가] 낙관적 UI 업데이트: 서버 응답(1~3초)을 기다리지 않고 화면 시계를 즉시 10분으로 초기화
+                                parentWin.currentTargetTime = Date.now() + (10 * 60 * 1000);
+                                let timeSpan = parentDoc.getElementById('logout-time-span');
+                                if (timeSpan) timeSpan.innerText = '⏱️ 10:00';
+                                let currentTimerDiv = parentDoc.getElementById('logout-timer');
+                                if (currentTimerDiv) {
+                                    currentTimerDiv.style.color = '#E4D4A4';
+                                    currentTimerDiv.style.borderColor = 'rgba(228, 212, 164, 0.4)';
+                                }
                                     
                                     const currentBtns = Array.from(parentDoc.querySelectorAll('button'));
                                     const currentHiddenBtns = currentBtns.filter(b => b.textContent.includes('extend_hidden_btn'));
