@@ -5,6 +5,14 @@ html, body, [class*="css"], p, span, h1, h2, h3, h4, h5, h6 {
     font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif !important;
 }
 
+/* --- Streamlit 기본 시스템 아이콘 텍스트 깨짐 방지 --- */
+span.material-symbols-rounded, 
+span.material-icons, 
+.material-symbols-rounded, 
+.material-icons {
+    font-family: "Material Symbols Rounded", "Material Icons" !important;
+}
+
 /* 1. 전체 배경색을 로고 바탕색과 일치 */
 [data-testid="stAppViewContainer"] {
     background-color: #050A18 !important;
