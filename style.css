@@ -488,9 +488,16 @@ input::placeholder {
 /* 채팅 입력창 내부 글씨 및 placeholder 색상 */
 [data-testid="stChatInput"] textarea {
     color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    caret-color: #FFFFFF !important;
 }
 [data-testid="stChatInput"] textarea::placeholder {
     color: rgba(255, 255, 255, 0.5) !important;
+    -webkit-text-fill-color: rgba(255, 255, 255, 0.5) !important;
+}
+/* 채팅 입력창 내부 컨테이너 배경을 투명하게 만들어 텍스트 가림 방지 */
+[data-testid="stChatInput"] div {
+    background-color: transparent !important;
 }
 [data-testid="stChatInputSubmitButton"] svg {
     fill: #E4D4A4 !important; /* 전송 버튼을 골드 색상으로 */
