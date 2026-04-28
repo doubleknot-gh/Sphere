@@ -1161,7 +1161,13 @@ def show_membership_card():
         for chat in chat_history:
             # 관리자는 'assistant' 아바타, 일반 회원은 'user' 아바타 사용
             with st.chat_message(chat.get("role", "user")):
-                st.markdown(f"**{chat['name']}** <span style='font-size:0.75rem; color:rgba(255,255,255,0.4); margin-left:8px;'>{chat['time']}</span>", unsafe_allow_html=True)
+                if chat.get("role") == "assistant":
+                    club_tag = "<span style='font-size:0.8rem; color:#ff4b4b; margin-left:5px;'>[관리자]</span>"
+                else:
+                    club_name = chat.get('club', '소속 없음')
+                    club_tag = f"<span style='font-size:0.8rem; color:#E4D4A4; margin-left:5px;'>[{club_name}]</span>"
+                
+                st.markdown(f"**{chat['name']}**{club_tag} <span style='font-size:0.75rem; color:rgba(255,255,255,0.4); margin-left:8px;'>{chat['time']}</span>", unsafe_allow_html=True)
                 st.write(chat["message"])
 
     # 하단 채팅 입력창
@@ -1169,6 +1175,7 @@ def show_membership_card():
         new_chat = {
             "role": "assistant" if info.get("role") == "admin" else "user",
             "name": info['name'],
+            "club": info.get('club') if info.get('club') else '소속 없음',
             "message": prompt,
             "time": datetime.now().strftime("%m/%d %H:%M")
         }
