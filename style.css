@@ -509,3 +509,31 @@ input::placeholder {
 [data-testid="stBottomBlock"] {
     background: #050A18 !important; /* 사이트 배경색과 완벽히 통일 */
 }
+
+/* 12. 채팅방 내 삭제 버튼 위치 및 디자인 조정 (우측 맨 끝 중앙 정렬) */
+[data-testid="stChatMessage"] [data-testid="stHorizontalBlock"] {
+    align-items: center !important; /* 메시지 텍스트와 버튼을 수직 '중간'으로 정렬 */
+}
+
+[data-testid="stChatMessage"] .stButton {
+    display: flex;
+    justify-content: flex-end; /* 컬럼 안에서 버튼을 '오른쪽 맨 끝'으로 밀착 */
+}
+
+[data-testid="stChatMessage"] .stButton button {
+    width: auto !important; /* 버튼이 너무 커지지 않게 글씨 크기만큼만 줄임 */
+    padding: 4px 12px !important;
+    background: rgba(255, 75, 75, 0.1) !important; /* 연한 빨간색 바탕 */
+    border: 1px solid rgba(255, 75, 75, 0.3) !important;
+    min-height: 32px !important;
+}
+
+[data-testid="stChatMessage"] .stButton button p {
+    color: #ff4b4b !important; /* 텍스트를 빨간색으로 변경 */
+    font-size: 0.85rem !important;
+}
+
+[data-testid="stChatMessage"] .stButton button:hover {
+    background: rgba(255, 75, 75, 0.2) !important;
+    border-color: rgba(255, 75, 75, 0.8) !important;
+}
