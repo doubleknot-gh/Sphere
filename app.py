@@ -6,6 +6,7 @@ import base64
 import os
 import io
 import random
+import json
 import pandas as pd
 from datetime import datetime, timedelta
 from PIL import Image
@@ -1134,6 +1135,49 @@ def show_membership_card():
                             st.error(f"비밀번호 변경 실패: {res.json().get('detail')}")
                     except:
                         st.error("서버 오류 발생")
+
+    # --- 💬 실시간 자유 소통방 (방명록) ---
+    st.markdown("---")
+    st.subheader("💬 자유 소통방")
+    st.caption("전체 회원들과 자유롭게 이야기를 나누어 보세요!")
+    
+    CHAT_FILE = "chat_history.json"
+    
+    # 파일이 없으면 초기화
+    if not os.path.exists(CHAT_FILE):
+        with open(CHAT_FILE, "w", encoding="utf-8") as f:
+            json.dump([], f)
+            
+    # 기존 채팅 기록 읽기
+    try:
+        with open(CHAT_FILE, "r", encoding="utf-8") as f:
+            chat_history = json.load(f)
+    except:
+        chat_history = []
+
+    # 채팅 내역 표시 영역 (스크롤이 가능한 박스 생성)
+    chat_container = st.container(height=400)
+    with chat_container:
+        for chat in chat_history:
+            # 관리자는 'assistant' 아바타, 일반 회원은 'user' 아바타 사용
+            with st.chat_message(chat.get("role", "user")):
+                st.markdown(f"**{chat['name']}** <span style='font-size:0.75rem; color:rgba(255,255,255,0.4); margin-left:8px;'>{chat['time']}</span>", unsafe_allow_html=True)
+                st.write(chat["message"])
+
+    # 하단 채팅 입력창
+    if prompt := st.chat_input("따뜻한 메시지를 입력해주세요..."):
+        new_chat = {
+            "role": "assistant" if info.get("role") == "admin" else "user",
+            "name": info['name'],
+            "message": prompt,
+            "time": datetime.now().strftime("%m/%d %H:%M")
+        }
+        chat_history.append(new_chat)
+        # 용량 최적화를 위해 최근 100개의 메시지만 유지
+        chat_history = chat_history[-100:]
+        with open(CHAT_FILE, "w", encoding="utf-8") as f:
+            json.dump(chat_history, f, ensure_ascii=False, indent=2)
+        st.rerun() # 메시지 입력 후 즉시 화면 새로고침하여 반영
 
     # 로그아웃 버튼
     if st.button("로그아웃"):
