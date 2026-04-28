@@ -1158,7 +1158,7 @@ def show_membership_card():
     # 채팅 내역 표시 영역 (스크롤이 가능한 박스 생성)
     chat_container = st.container(height=400)
     with chat_container:
-        for chat in chat_history:
+        for idx, chat in enumerate(chat_history):
             # 관리자는 'assistant' 아바타, 일반 회원은 'user' 아바타 사용
             with st.chat_message(chat.get("role", "user")):
                 if chat.get("role") == "assistant":
@@ -1168,11 +1168,28 @@ def show_membership_card():
                     club_tag = f"<span style='font-size:0.8rem; color:#E4D4A4; margin-left:5px;'>[{club_name}]</span>"
                 
                 st.markdown(f"**{chat['name']}**{club_tag} <span style='font-size:0.75rem; color:rgba(255,255,255,0.4); margin-left:8px;'>{chat['time']}</span>", unsafe_allow_html=True)
-                st.write(chat["message"])
+                
+                # 본인 메시지인지 확인 (기존 메시지는 이름으로, 새 메시지는 학번으로 더 정확히 비교)
+                is_mine = chat.get("student_id") == info["student_id"] if "student_id" in chat else chat["name"] == info["name"]
+                
+                if is_mine:
+                    col1, col2 = st.columns([0.85, 0.15])
+                    with col1:
+                        st.write(chat["message"])
+                    with col2:
+                        if st.button("삭제", key=f"del_chat_{chat.get('id', idx)}"):
+                            chat_history.pop(idx)
+                            with open(CHAT_FILE, "w", encoding="utf-8") as f:
+                                json.dump(chat_history, f, ensure_ascii=False, indent=2)
+                            st.rerun()
+                else:
+                    st.write(chat["message"])
 
     # 하단 채팅 입력창
     if prompt := st.chat_input("따뜻한 메시지를 입력해주세요..."):
         new_chat = {
+            "id": str(time.time()),
+            "student_id": info['student_id'],
             "role": "assistant" if info.get("role") == "admin" else "user",
             "name": info['name'],
             "club": info.get('club') if info.get('club') else '소속 없음',
