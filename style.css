@@ -458,13 +458,13 @@ input::placeholder {
 
 /* 10. 채팅창 글래스모피즘(Glassmorphism) 및 UI 개선 */
 [data-testid="stChatMessage"] {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(228, 212, 164, 0.15);
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); /* 회원증 배경과 동일한 그라데이션 */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 16px;
     padding: 10px 15px;
-    backdrop-filter: blur(10px);
     margin-bottom: 15px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 [data-testid="stChatInput"] {

@@ -1159,8 +1159,9 @@ def show_membership_card():
     chat_container = st.container(height=400)
     with chat_container:
         for idx, chat in enumerate(chat_history):
-            # 관리자는 'assistant' 아바타, 일반 회원은 'user' 아바타 사용
-            with st.chat_message(chat.get("role", "user")):
+            role = chat.get("role", "user")
+            # 관리자는 로고 이미지, 일반 회원은 기본 'user' 아이콘 사용
+            with st.chat_message(role, avatar=logo_image if role == "assistant" else "user"):
                 if chat.get("role") == "assistant":
                     club_tag = "<span style='font-size:0.8rem; color:#ff4b4b; margin-left:5px;'>[관리자]</span>"
                 else:
