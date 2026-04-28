@@ -1171,13 +1171,17 @@ def show_membership_card():
                 
                 # 본인 메시지인지 확인 (기존 메시지는 이름으로, 새 메시지는 학번으로 더 정확히 비교)
                 is_mine = chat.get("student_id") == info["student_id"] if "student_id" in chat else chat["name"] == info["name"]
+                # [기능 1] 관리자인지 확인
+                is_admin = info.get("role") == "admin"
                 
-                if is_mine:
+                if is_mine or is_admin:
                     col1, col2 = st.columns([0.85, 0.15])
                     with col1:
                         st.write(chat["message"])
                     with col2:
-                        if st.button("삭제", key=f"del_chat_{chat.get('id', idx)}"):
+                        # 관리자가 남의 글을 지울 때는 버튼을 빨간색 이모지로 표시
+                        btn_label = "🗑️" if (is_admin and not is_mine) else "삭제"
+                        if st.button(btn_label, key=f"del_chat_{chat.get('id', idx)}"):
                             chat_history.pop(idx)
                             with open(CHAT_FILE, "w", encoding="utf-8") as f:
                                 json.dump(chat_history, f, ensure_ascii=False, indent=2)
@@ -1187,13 +1191,21 @@ def show_membership_card():
 
     # 하단 채팅 입력창
     if prompt := st.chat_input("따뜻한 메시지를 입력해주세요..."):
+        
+        # [기능 4] 비속어 필터링
+        banned_words = ['시발', '씨발', '개새끼', '병신', '미친', '존나', '좆', '지랄', '염병', '느금마']
+        filtered_prompt = prompt
+        for word in banned_words:
+            if word in filtered_prompt:
+                filtered_prompt = filtered_prompt.replace(word, '***')
+
         new_chat = {
             "id": str(time.time()),
             "student_id": info['student_id'],
             "role": "assistant" if info.get("role") == "admin" else "user",
             "name": info['name'],
             "club": info.get('club') if info.get('club') else '소속 없음',
-            "message": prompt,
+            "message": filtered_prompt,
             "time": datetime.now().strftime("%m/%d %H:%M")
         }
         chat_history.append(new_chat)
