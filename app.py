@@ -252,6 +252,47 @@ def get_card_html(info, is_preview=False):
                 max-width: 600px !important; /* 카드 너비 확대 */
             }}
         </style>
+        <script>
+            // 바코드 모달(확대창)을 띄우는 자바스크립트 함수
+            if(typeof window.showBarcodeModal !== 'function') {{
+                window.showBarcodeModal = function(barcodeData) {{
+                    const parentDoc = window.parent.document;
+                    
+                    // 기존에 떠있는 모달이 있다면 제거
+                    let existingModal = parentDoc.getElementById('barcode-modal');
+                    if(existingModal) existingModal.remove();
+
+                    // 전체 화면을 덮는 어두운 배경 생성
+                    let modal = parentDoc.createElement('div');
+                    modal.id = 'barcode-modal';
+                    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 9999999; display: flex; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px); cursor: pointer;';
+                    modal.onclick = function() {{ modal.remove(); }}; // 클릭 시 닫기
+
+                    // 바코드가 표시될 흰색 박스 (스캐너 인식률을 높이기 위해 흰색 배경 사용)
+                    let container = parentDoc.createElement('div');
+                    container.style.cssText = 'background: white; padding: 20px 40px; border-radius: 16px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform: scale(0.9); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;';
+                    
+                    // 실제 바코드 텍스트
+                    let barcodeText = parentDoc.createElement('div');
+                    barcodeText.innerText = barcodeData;
+                    barcodeText.style.cssText = "font-family: 'Libre Barcode 39', cursive; font-size: 6rem; color: black; line-height: 1;";
+                    
+                    // 하단 안내 문구
+                    let hint = parentDoc.createElement('div');
+                    hint.innerText = '아무 곳이나 터치하여 닫기';
+                    hint.style.cssText = 'margin-top: 25px; font-size: 1rem; color: #E4D4A4; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.8);';
+
+                    let style = parentDoc.createElement('style');
+                    style.innerHTML = '@keyframes popIn {{ from {{ transform: scale(0.8); opacity: 0; }} to {{ transform: scale(1); opacity: 1; }} }}';
+                    
+                    container.appendChild(barcodeText);
+                    modal.appendChild(container);
+                    modal.appendChild(hint);
+                    modal.appendChild(style);
+                    parentDoc.body.appendChild(modal);
+                }};
+            }}
+        </script>
         <div class="membership-card">
             <div class="card-header">
                 <div class="card-chip"></div>
@@ -269,11 +310,12 @@ def get_card_html(info, is_preview=False):
             <div class="card-footer">
                 <p class="club">{club_html}</p>
             </div>
-            <!-- 바코드 영역 -->
-            <div style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 10px; text-align: center;">
+            <!-- 바코드 영역 (클릭 이벤트 및 안내 문구 추가) -->
+            <div style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 10px; text-align: center; cursor: pointer; transition: transform 0.2s;" onclick="showBarcodeModal('*{info['student_id']}*')" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
                 <div style="font-family: 'Libre Barcode 39', cursive; font-size: 2.8rem; color: rgba(255,255,255,0.7); line-height: 1;">
                     *{info['student_id']}*
                 </div>
+                <div style="font-size: 0.65rem; color: rgba(255,255,255,0.4); margin-top: 3px; letter-spacing: 1px;">👆 터치하여 바코드 확대</div>
             </div>
         </div>
     """
