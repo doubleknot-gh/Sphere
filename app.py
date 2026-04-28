@@ -1168,7 +1168,7 @@ def show_membership_card():
                     club_name = chat.get('club', '소속 없음')
                     club_tag = f"<span style='font-size:0.8rem; color:#E4D4A4; margin-left:5px;'>[{club_name}]</span>"
                 
-                st.markdown(f"**{chat['name']}**{club_tag} <span style='font-size:0.75rem; color:rgba(255,255,255,0.4); margin-left:8px;'>{chat['time']}</span>", unsafe_allow_html=True)
+                st.markdown(f"**{chat['name']}**{club_tag} <span style='font-size:0.75rem; color:rgba(255,255,255,0.7); margin-left:8px;'>{chat['time']}</span>", unsafe_allow_html=True)
                 
                 # 본인 메시지인지 확인 (기존 메시지는 이름으로, 새 메시지는 학번으로 더 정확히 비교)
                 is_mine = chat.get("student_id") == info["student_id"] if "student_id" in chat else chat["name"] == info["name"]

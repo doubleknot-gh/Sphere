@@ -467,10 +467,31 @@ input::placeholder {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
+/* 채팅 메시지 내 텍스트(이름, 내용) 색상 밝게 */
+[data-testid="stChatMessage"] div[data-testid="stMarkdownContainer"] > p {
+    color: #FFFFFF !important;
+    font-size: 0.95rem;
+}
+[data-testid="stChatMessage"] div[data-testid="stMarkdownContainer"] strong {
+    color: #F5EFE0 !important; /* 이름은 밝은 아이보리색으로 강조 */
+    font-size: 1.05rem;
+}
+
 [data-testid="stChatInput"] {
-    background: rgba(0, 0, 0, 0.3) !important;
-    border: 1px solid rgba(228, 212, 164, 0.3) !important;
-    border-radius: 20px !important;
+    background: rgba(10, 25, 47, 0.8) !important; /* 다크 네이비 배경 */
+    border: 1px solid rgba(228, 212, 164, 0.4) !important; /* 골드 테두리 */
+    border-radius: 24px !important;
     padding: 5px !important;
     backdrop-filter: blur(10px);
+}
+
+/* 채팅 입력창 내부 글씨 및 placeholder 색상 */
+[data-testid="stChatInput"] textarea {
+    color: #FFFFFF !important;
+}
+[data-testid="stChatInput"] textarea::placeholder {
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+[data-testid="stChatInputSubmitButton"] svg {
+    fill: #E4D4A4 !important; /* 전송 버튼을 골드 색상으로 */
 }
