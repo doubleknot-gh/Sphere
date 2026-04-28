@@ -246,6 +246,7 @@ def get_card_html(info, is_preview=False):
     club_html = "".join([f"<span style='margin-right: 8px;'>{c.strip()}</span>" for c in raw_club.split(',')])
 
     return f"""
+        <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+39&display=swap" rel="stylesheet">
         <style>
             .membership-card {{
                 max-width: 600px !important; /* 카드 너비 확대 */
@@ -267,6 +268,12 @@ def get_card_html(info, is_preview=False):
             </div>
             <div class="card-footer">
                 <p class="club">{club_html}</p>
+            </div>
+            <!-- 바코드 영역 -->
+            <div style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 10px; text-align: center;">
+                <div style="font-family: 'Libre Barcode 39', cursive; font-size: 2.8rem; color: rgba(255,255,255,0.7); line-height: 1;">
+                    *{info['student_id']}*
+                </div>
             </div>
         </div>
     """
@@ -429,7 +436,7 @@ def show_admin_dashboard():
             st.caption(", ".join(unique_clubs))
 
     # 탭으로 기능 분리
-    tab1, tab2, tab3, tab4 = st.tabs(["👥 전체 회원 조회", "📂 명단 일괄 등록", "➕ 신규 회원 등록", "⚙️ 개별 회원 관리"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["👥 전체 회원 조회", "📂 명단 일괄 등록", "➕ 신규 회원 등록", "⚙️ 개별 회원 관리", "📢 공지사항 관리"])
 
     with tab1:
         if st.button("회원 목록 새로고침"):
@@ -650,6 +657,10 @@ def show_admin_dashboard():
                     if c.strip(): all_clubs_tab4.add(c.strip())
             all_clubs_tab4 = sorted(list(all_clubs_tab4))
             
+            # [추가] 이름/학번 통합 검색창
+            search_query = st.text_input("🔍 이름 또는 학번 빠른 검색", placeholder="찾으시는 회원의 이름이나 학번을 입력하세요...")
+            st.markdown("---")
+            
             # [기능 추가] 개별 회원 관리에도 분과 필터 연동
             available_divisions_tab4 = sorted(list(set(get_division(c) for c in all_clubs_tab4)))
             
@@ -666,6 +677,11 @@ def show_admin_dashboard():
                 
             filtered_members = st.session_state.admin_member_list
             
+            # 검색어 필터링 우선 적용
+            if search_query.strip():
+                q = search_query.strip().lower()
+                filtered_members = [m for m in filtered_members if q in m['name'].lower() or q in str(m['student_id']).lower()]
+                
             if selected_division_tab4 != "전체 분과":
                 filtered_members = [m for m in filtered_members if any(get_division(c.strip()) == selected_division_tab4 for c in (m.get('club') or "").split(','))]
                 
@@ -839,6 +855,24 @@ def show_admin_dashboard():
                     if st.button("❌ 취소", key="confirm_no_tab4"):
                         del st.session_state['delete_confirm_target_tab4']
                         st.rerun()
+
+    with tab5:
+        st.subheader("📢 실 바 공지사항 배너 설정")
+        st.info("여기에 입력한 공지사항이 모든 회원의 스마트폰 회원증 상단에 실시간 전광판처럼 노출됩니다.")
+        
+        current_notice = ""
+        if os.path.exists("notice.txt"):
+            with open("notice.txt", "r", encoding="utf-8") as f:
+                current_notice = f.read()
+                
+        with st.form("notice_form"):
+            new_notice = st.text_area("공지사항 내용 (내용을 모두 지우면 배너가 사라집니다)", value=current_notice, placeholder="예: 이번 주 금요일 총동아리연합회 전체 회의가 있습니다.", height=100)
+            if st.form_submit_button("공지사항 적용 및 배포", type="primary"):
+                with open("notice.txt", "w", encoding="utf-8") as f:
+                    f.write(new_notice.strip())
+                st.success("✅ 공지사항이 성공적으로 업데이트되었습니다! 회원증 화면에 즉시 반영됩니다.")
+                time.sleep(1)
+                st.rerun()
 
 # 2. 디지털 회원증 페이지
 def show_membership_card():
