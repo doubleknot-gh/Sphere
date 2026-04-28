@@ -1065,6 +1065,21 @@ def show_membership_card():
     # 로고 표시
     st.image(logo_image, width=150)
     
+    # [추가] 공지사항 배너 렌더링
+    notice_text = ""
+    if os.path.exists("notice.txt"):
+        with open("notice.txt", "r", encoding="utf-8") as f:
+            notice_text = f.read().strip()
+            
+    if notice_text:
+        notice_html = notice_text.replace('\n', '<br>')
+        st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #d4af37 0%, #a88825 100%); padding: 12px 18px; border-radius: 12px; margin: 15px 0 5px 0; color: #050A18; box-shadow: 0 4px 15px rgba(228, 212, 164, 0.2); animation: fadeInUp 0.5s ease-out; display: flex; align-items: flex-start; gap: 12px;">
+                <span style="font-size: 1.3rem; margin-top: -2px;">📢</span>
+                <span style="font-size: 0.95rem; font-weight: 700; line-height: 1.4; word-break: keep-all;">{notice_html}</span>
+            </div>
+        """, unsafe_allow_html=True)
+    
     # KU 로고 이미지 로드 (base64)
     # [수정] 공통 함수 사용하여 회원증 렌더링
     st.markdown(get_card_html(info), unsafe_allow_html=True)
