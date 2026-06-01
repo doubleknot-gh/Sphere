@@ -109,8 +109,6 @@ if 'expire_time' not in st.session_state:
     st.session_state.expire_time = None
 if 'local_storage_checked' not in st.session_state:
     st.session_state.local_storage_checked = False
-if 'extend_count' not in st.session_state:
-    st.session_state.extend_count = 0
 
 # --- 로컬 스토리지 저장/삭제 이벤트 처리 ---
 if st.session_state.get('save_ls'):
@@ -118,7 +116,6 @@ if st.session_state.get('save_ls'):
         <script>
             window.parent.localStorage.setItem('access_token', '{st.session_state.token}');
             window.parent.localStorage.setItem('expire_time', '{st.session_state.expire_time.isoformat() if st.session_state.expire_time else ""}');
-            window.parent.localStorage.setItem('extend_count', '{st.session_state.extend_count}');
         </script>
     """, height=0)
     st.session_state.save_ls = False
@@ -128,7 +125,6 @@ if st.session_state.get('clear_ls'):
         <script>
             window.parent.localStorage.removeItem('access_token');
             window.parent.localStorage.removeItem('expire_time');
-            window.parent.localStorage.removeItem('extend_count');
         </script>
     """, height=0)
     st.session_state.clear_ls = False
@@ -138,8 +134,7 @@ if not st.session_state.local_storage_checked:
     st.markdown("""
         <style>
             div[data-testid="stTextInput"]:has(input[aria-label="hidden_ls_token"]),
-            div[data-testid="stTextInput"]:has(input[aria-label="hidden_ls_expire"]),
-            div[data-testid="stTextInput"]:has(input[aria-label="hidden_ls_extend"]) {
+            div[data-testid="stTextInput"]:has(input[aria-label="hidden_ls_expire"]) {
                 display: none;
             }
         </style>
@@ -147,7 +142,6 @@ if not st.session_state.local_storage_checked:
     
     ls_token = st.text_input("hidden_ls_token", key="ls_token_input", label_visibility="collapsed")
     ls_expire = st.text_input("hidden_ls_expire", key="ls_expire_input", label_visibility="collapsed")
-    ls_extend = st.text_input("hidden_ls_extend", key="ls_extend_input", label_visibility="collapsed")
     
     st.components.v1.html("""
         <script>
@@ -158,13 +152,11 @@ if not st.session_state.local_storage_checked:
             let checkInterval = setInterval(function() {
                 const tokenInput = parentDoc.querySelector('input[aria-label="hidden_ls_token"]');
                 const expireInput = parentDoc.querySelector('input[aria-label="hidden_ls_expire"]');
-                const extendInput = parentDoc.querySelector('input[aria-label="hidden_ls_extend"]');
                 
                 if (tokenInput) {
                     clearInterval(checkInterval);
                     const savedToken = window.parent.localStorage.getItem('access_token');
                     const savedExpire = window.parent.localStorage.getItem('expire_time');
-                    const savedExtend = window.parent.localStorage.getItem('extend_count');
                     
                     if (savedToken && tokenInput.value === "") {
                         let setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
@@ -174,10 +166,6 @@ if not st.session_state.local_storage_checked:
                         if (savedExpire && expireInput) {
                             setter.call(expireInput, savedExpire);
                             expireInput.dispatchEvent(new Event('input', { bubbles: true }));
-                        }
-                        if (savedExtend && extendInput) {
-                            setter.call(extendInput, savedExtend);
-                            extendInput.dispatchEvent(new Event('input', { bubbles: true }));
                         }
                     } else if (!savedToken && tokenInput.value === "") {
                         let setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
@@ -201,8 +189,6 @@ if not st.session_state.local_storage_checked:
                 st.session_state.expire_time = datetime.fromisoformat(ls_expire)
             except:
                 pass
-        if ls_extend and ls_extend.isdigit():
-            st.session_state.extend_count = int(ls_extend)
         st.session_state.local_storage_checked = True
         st.rerun()
         
@@ -330,10 +316,9 @@ def show_login_page():
                             except:
                                 pass
 
-                            # 로그인 만료 시간 설정 (관리자, 회원 모두 10분)
-                            expire_mins = 10
+                            # 로그인 만료 시간 설정 (관리자, 회원 모두 30분)
+                            expire_mins = 30
                             st.session_state.expire_time = datetime.now() + timedelta(minutes=expire_mins)
-                            st.session_state.extend_count = 0
 
                             # 로그인 성공 애니메이션 (로고 확대 및 페이드아웃)
                             try:
@@ -958,7 +943,6 @@ def show_membership_card():
                     // JS 내부 타이머 상태 변수 (첫 실행 시 설정)
                     if (typeof parentWin.currentTargetTime === 'undefined') {
                         parentWin.currentTargetTime = null;
-                        parentWin.lastSeenExtendCount = -1;
                     }
 
                     function updateTimer() {
@@ -967,19 +951,10 @@ def show_membership_card():
                         if (!dataDiv) return;
                         
                         const remainingFromPython = parseInt(dataDiv.getAttribute('data-remaining'));
-                        const extendCountFromPython = parseInt(dataDiv.getAttribute('data-extend'));
                         
-                        let extendBtn = parentDoc.getElementById('extend-session-btn');
-                        
-                        // 페이지 첫 로드이거나 파이썬 측 연장 횟수가 증가했다면 타겟 시간(종료 시점) 재설정
-                        if (parentWin.currentTargetTime === null || extendCountFromPython !== parentWin.lastSeenExtendCount) {
+                        // 타겟 시간(종료 시점) 재설정 (최초 실행 시 1회만 설정)
+                        if (parentWin.currentTargetTime === null) {
                             parentWin.currentTargetTime = Date.now() + remainingFromPython * 1000;
-                            parentWin.lastSeenExtendCount = extendCountFromPython;
-                            
-                            // 로딩 상태 해제
-                            if (extendBtn && extendBtn.getAttribute('data-loading') === 'true') {
-                                extendBtn.removeAttribute('data-loading');
-                            }
                         }
                         
                         // 목표 종료 시점을 기준으로 실시간 남은 시간 계산
@@ -1005,51 +980,6 @@ def show_membership_card():
                         } else {
                             timerDiv.style.color = '#E4D4A4';
                             timerDiv.style.borderColor = 'rgba(228, 212, 164, 0.4)';
-                        }
-                        
-                        // 연장 중일 때는 텍스트 덮어쓰기 방지
-                        if (extendBtn && extendBtn.getAttribute('data-loading') !== 'true') {
-                            if (extendCountFromPython >= 3) {
-                                extendBtn.innerText = '연장 불가';
-                                extendBtn.style.cssText = 'background: rgba(255,255,255,0.2); color: rgba(255,255,255,0.5); border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: not-allowed;';
-                                extendBtn.disabled = true;
-                            } else {
-                                extendBtn.innerText = '연장 (' + (3 - extendCountFromPython) + '회)';
-                                extendBtn.style.cssText = 'background: #E4D4A4; color: #050A18; border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: pointer; transition: transform 0.1s;';
-                                extendBtn.disabled = false;
-                                extendBtn.onmouseover = () => extendBtn.style.transform = 'scale(1.05)';
-                                extendBtn.onmouseout = () => extendBtn.style.transform = 'scale(1)';
-                                
-                                extendBtn.onclick = function() {
-                                    // [수정] 버튼 글씨도 낙관적 업데이트 적용 ('연장 중...' 생략하고 즉시 남은 횟수 표시)
-                                    let nextCount = extendCountFromPython + 1;
-                                    if (nextCount >= 3) {
-                                        extendBtn.innerText = '연장 불가';
-                                        extendBtn.style.cssText = 'background: rgba(255,255,255,0.2); color: rgba(255,255,255,0.5); border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; cursor: not-allowed;';
-                                    } else {
-                                        extendBtn.innerText = '연장 (' + (3 - nextCount) + '회)';
-                                    }
-
-                                    extendBtn.disabled = true;
-                                    extendBtn.setAttribute('data-loading', 'true');
-                                  
-                                  // [추가] 낙관적 UI 업데이트: 서버 응답(1~3초)을 기다리지 않고 화면 시계를 즉시 10분으로 초기화
-                                parentWin.currentTargetTime = Date.now() + (10 * 60 * 1000);
-                                let timeSpan = parentDoc.getElementById('logout-time-span');
-                                if (timeSpan) timeSpan.innerText = '⏱️ 10:00';
-                                let currentTimerDiv = parentDoc.getElementById('logout-timer');
-                                if (currentTimerDiv) {
-                                    currentTimerDiv.style.color = '#E4D4A4';
-                                    currentTimerDiv.style.borderColor = 'rgba(228, 212, 164, 0.4)';
-                                }
-                                    
-                                    const currentBtns = Array.from(parentDoc.querySelectorAll('button'));
-                                    const currentHiddenBtns = currentBtns.filter(b => b.textContent.includes('extend_hidden_btn'));
-                                    if (currentHiddenBtns.length > 0) {
-                                        currentHiddenBtns[currentHiddenBtns.length - 1].click();
-                                    }
-                                };
-                            }
                         }
                     }
                     
@@ -1234,7 +1164,6 @@ if st.session_state.token is None:
                 window.parent.clearInterval(window.parent.logoutTimerInterval);
             }
                     window.parent.currentTargetTime = null;
-                    window.parent.lastSeenExtendCount = -1;
         </script>
     """, height=0)
     show_login_page()
