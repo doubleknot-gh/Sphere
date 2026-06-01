@@ -866,37 +866,9 @@ def show_membership_card():
         else:
             # [수정] 프론트엔드 JS가 최신 연장 상태를 즉시 감지할 수 있도록 데이터 요소 삽입
             st.markdown(f"""
-                <div id="session-data" style="display: none;" 
-                     data-remaining="{int(remaining)}" 
-                     data-extend="{st.session_state.extend_count}">
+                <div id="session-data" style="display: none;" data-remaining="{int(remaining)}">
                 </div>
             """, unsafe_allow_html=True)
-
-            st.markdown("""
-                <style>
-                    /* 파이썬 연장 버튼이 화면에 보이지 않도록 CSS로 완벽하게 숨김 (깜빡임 방지) */
-                    div[data-testid="stElementContainer"]:has(.hide-extend-btn) { display: none; }
-                    div[data-testid="stElementContainer"]:has(.hide-extend-btn) + div[data-testid="stElementContainer"] { 
-                        position: absolute !important; opacity: 0 !important; z-index: -1 !important; 
-                    }
-                </style>
-                <div class="hide-extend-btn"></div>
-            """, unsafe_allow_html=True)
-            if st.button("extend_hidden_btn", key="extend_session_btn"):
-                if st.session_state.extend_count < 3:
-                    headers = {"Authorization": f"Bearer {st.session_state.token}"}
-                    try:
-                        res = requests.post(f"{API_URL}/token/refresh", headers=headers)
-                        if res.status_code == 200:
-                            st.session_state.token = res.json()['access_token']
-                            st.session_state.expire_time = datetime.now() + timedelta(minutes=10)
-                            st.session_state.extend_count += 1
-                            st.session_state.save_ls = True
-                            st.rerun()
-                        elif res.status_code == 401:
-                            do_logout()
-                    except:
-                        pass
 
             # 화면 우측 상단에 남은 시간을 표시하고, 시간이 지나면 새로고침하여 로그아웃 처리
             st.components.v1.html("""
@@ -904,33 +876,17 @@ def show_membership_card():
                     const parentDoc = window.parent.document;
                     const parentWin = window.parent;
                     
-                    // 매번 렌더링될 때마다 실제 파이썬 연장 버튼(extend_hidden_btn)을 화면에서 숨기기 처리
-                    const btns = Array.from(parentDoc.querySelectorAll('button'));
-                    const hiddenBtn = btns.find(b => b.textContent.includes('extend_hidden_btn'));
-                    if (hiddenBtn) {
-                        const btnContainer = hiddenBtn.closest('.stButton');
-                        if (btnContainer) {
-                            btnContainer.style.position = 'absolute';
-                            btnContainer.style.opacity = '0';
-                            btnContainer.style.zIndex = '-1';
-                        }
-                    }
-
                     // 타이머 UI 생성 또는 선택
                     let timerDiv = parentDoc.getElementById('logout-timer');
                     if (!timerDiv) {
                         timerDiv = parentDoc.createElement('div');
                         timerDiv.id = 'logout-timer';
-                        timerDiv.style.cssText = 'position: fixed; top: 15px; right: 15px; background: rgba(10, 25, 47, 0.8); border: 1px solid rgba(228, 212, 164, 0.4); padding: 8px 15px; border-radius: 8px; color: #E4D4A4; font-weight: bold; z-index: 999999; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-family: monospace; font-size: 1.1rem; backdrop-filter: blur(5px); transition: color 0.3s, border-color 0.3s; display: flex; align-items: center; gap: 12px;';
+                        timerDiv.style.cssText = 'position: fixed; top: 15px; right: 15px; background: rgba(10, 25, 47, 0.8); border: 1px solid rgba(228, 212, 164, 0.4); padding: 8px 15px; border-radius: 8px; color: #E4D4A4; font-weight: bold; z-index: 999999; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-family: monospace; font-size: 1.1rem; backdrop-filter: blur(5px); transition: color 0.3s, border-color 0.3s; display: flex; align-items: center; justify-content: center;';
                         
                         // 시간 표시 영역
                         let timeSpan = parentDoc.createElement('span');
                         timeSpan.id = 'logout-time-span';
                         timerDiv.appendChild(timeSpan);
-                        
-                        let extendBtn = parentDoc.createElement('button');
-                        extendBtn.id = 'extend-session-btn';
-                        timerDiv.appendChild(extendBtn);
 
                         parentDoc.body.appendChild(timerDiv);
                     }
