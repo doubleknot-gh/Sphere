@@ -1,6 +1,8 @@
 
 from fastapi import Depends, FastAPI, HTTPException, status, UploadFile, File
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.responses import FileResponse
+from pathlib import Path
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
@@ -32,8 +34,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # JWT 설정
 SECRET_KEY = os.getenv("SECRET_KEY", "a-very-secret-key-for-local-development")
 ALGORITHM = "HS256"
-MEMBER_TOKEN_EXPIRE_MINUTES = 10 # 일반 회원 10분
-ADMIN_TOKEN_EXPIRE_MINUTES = 10 # 관리자 10분
+MEMBER_TOKEN_EXPIRE_MINUTES = 30 # 일반 회원 30분
+ADMIN_TOKEN_EXPIRE_MINUTES = 30 # 관리자 30분
 
 # DB 초기화용 비밀키
 INIT_DB_SECRET = os.getenv("INIT_DB_SECRET", "local-init-secret")
@@ -122,7 +124,7 @@ def get_current_admin(current_user: Member = Depends(get_current_user)):
 
 @app.get("/")
 def read_root():
-    return {"message": "Digital Membership API is running. Please access the Streamlit frontend application to use the service."}
+    return FileResponse(Path(__file__).parent / "web" / "index.html", headers={"Cache-Control": "no-store"})
 
 @app.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db_session: Session = Depends(get_db)):
@@ -495,3 +497,8 @@ def init_database(secret: Optional[str] = None, db_session: Session = Depends(ge
         
     db_session.commit()
     return {"status": "success", "details": messages}
+
+
+# Serve the browser frontend and its authenticated companion endpoints.
+from web_api import install_web
+install_web(app, get_current_user, get_current_admin, upload_csv)

@@ -1,113 +1,61 @@
-# 디지털 회원증 시스템 (Digital Membership System)
+# 디지털 회원증 · SPHERE
 
-FastAPI와 Streamlit으로 구현된 웹 기반 디지털 회원증 시스템입니다. 사용자는 로그인을 통해 자신의 회원증을 확인할 수 있으며, 관리자는 회원 목록 관리, 일괄 등록, 상태 변경 등의 기능을 수행할 수 있습니다.
+FastAPI가 HTML·CSS·JavaScript 화면과 API를 같은 주소에서 제공합니다. Streamlit 서비스 없이 회원 로그인, 회원증 조회, 비밀번호 변경, 관리자 엑셀 업로드 및 회원 관리를 사용할 수 있습니다.
 
-## ✨ 주요 기능
+## 실행
 
-- **사용자 기능**
-  - 학번/비밀번호 기반 로그인 (JWT 인증)
-  - 디지털 회원증 확인 (이름, 학번, 소속 동아리)
-  - 실시간 시간 표시
-  - 비밀번호 변경
-- **관리자 기능**
-  - 관리자 전용 대시보드
-  - 전체 회원 목록 조회 및 검색
-  - CSV 파일을 통한 회원 일괄 등록
-  - 개별 회원 실시간 등록
-  - 특정 회원의 활동 상태 변경 및 비밀번호 초기화
+Python 3.11 이상에서:
 
-## 🛠️ 기술 스택
-
-- **Backend**: Python, FastAPI, SQLAlchemy, Pydantic, Passlib, python-jose
-- **Frontend**: Streamlit
-- **Database**: PostgreSQL (for deployment), SQLite (for local)
-- **Deployment**: Render.com
-
----
-
-## 🚀 로컬 환경에서 실행하기
-
-### 1. 사전 준비
-- Python 3.8 이상 설치
-- Git 설치
-
-### 2. 프로젝트 클론 및 설정
-```bash
-# 1. 프로젝트 코드를 컴퓨터로 복제합니다.
-git clone https://github.com/your-username/your-repository.git
-cd your-repository
-
-# 2. 필요한 라이브러리를 설치합니다.
+```sh
 pip install -r requirements.txt
-```
-
-### 3. 서버 실행
-이 프로젝트는 백엔드와 프론트엔드가 분리되어 있으므로, **두 개의 터미널**을 열어 각각 실행해야 합니다.
-
-**터미널 1: 백엔드 서버 (FastAPI)**
-```bash
 uvicorn main:app --reload
 ```
-> 서버가 `http://127.0.0.1:8000` 에서 실행됩니다.
 
-**터미널 2: 프론트엔드 앱 (Streamlit)**
-```bash
-streamlit run app.py
+브라우저에서 http://127.0.0.1:8000 을 여세요. `/health`는 상태 확인용이며 API 문서는 `/docs`에 있습니다. 개발 컨테이너도 8000 포트에서 같은 서버를 시작합니다.
+
+## Render + Supabase
+
+기존 Render FastAPI 서비스를 그대로 사용합니다.
+
+- Build command: `pip install -r requirements.txt`
+- Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+- `DATABASE_URL`: Supabase PostgreSQL 연결 URI (Session pooler, SSL 사용)
+- `SECRET_KEY`: 기존 JWT 비밀키 유지
+- `INIT_DB_SECRET`: 기존 초기화 비밀키 유지
+
+배포가 완료되면 **기존 Render 서비스의 루트 URL**을 여세요. 별도 프론트엔드 서비스나 `API_URL` 설정은 필요하지 않습니다. 브라우저는 같은 도메인의 API에 요청하며 DB 비밀번호는 서버에만 저장합니다. 프론트 파일에는 연결 주소나 비밀키를 넣지 마세요.
+
+`DATABASE_URL`이 없으면 로컬 SQLite(`sql_app.db`)를 사용합니다. Render에서는 반드시 외부 DB를 설정하세요. DB 테이블은 앱 시작 시 없는 것만 생성하며, 기존 테이블을 삭제하거나 회원을 초기화하지 않습니다. 기존 데이터가 자동 이전되지는 않습니다.
+
+## 사용 흐름
+
+1. 기존 계정으로 로그인합니다. 새 DB에는 관리자 계정을 별도로 준비해야 합니다. 기존 `/init-db` 초기화 API를 사용할 경우 초기 계정의 비밀번호를 즉시 변경하세요.
+2. 관리자는 **회원 관리 → 엑셀 일괄 등록**에서 xlsx 또는 CSV 파일을 선택합니다.
+3. 첫 행을 제목으로 사용할지 확인하고 이름·학번·소속 열을 각각 연결합니다. CSV는 UTF-8 또는 CP949를 지원합니다. 제한은 파일 10MB / 20,000행 / 200열입니다. 엑셀 학번은 텍스트 형식으로 저장해야 선행 0이 보존됩니다.
+4. 등록 버튼을 눌러 결과를 확인합니다. 기존 회원은 삭제하지 않고 소속만 추가합니다. 초기 비밀번호와 관리자 부여 규칙은 기존 백엔드와 같습니다.
+5. 회원은 같은 사이트에서 학번과 비밀번호로 로그인해 본인의 회원증을 봅니다. 비활동 상태는 회원증에 표시됩니다.
+
+관리자는 이름·학번·소속 검색, 상태 필터, CSV 다운로드, 개별 등록, 소속·학번·상태·권한 수정, 비밀번호 초기화, 회원 삭제를 할 수 있습니다. 삭제와 비밀번호 초기화는 확인 창을 거칩니다. 여러 필드 수정은 기존 API를 순차 호출하므로 일부 요청만 성공할 수 있으며 오류가 나면 목록을 다시 확인하세요.
+
+공지와 소통방은 새 DB 테이블(`site_notice`, `chat_messages`)에 저장됩니다. 소통방은 최신 100개를 보여주며 본인 또는 관리자만 삭제할 수 있습니다. 새로고침 버튼으로 최신 내용을 읽습니다. 기존 Streamlit의 `notice.txt`, `chat_history.json`은 자동 이전되지 않습니다. 필요하면 이전 화면에서 내용을 보관하고 새 공지를 다시 등록하세요.
+
+로그인 토큰은 브라우저 탭의 `sessionStorage`에 저장하며 서버의 만료 시간에 맞춰 자동 로그아웃합니다. 로그아웃 시 화면의 회원 정보와 파일 선택을 지웁니다. 관리자 권한은 화면뿐 아니라 API에서도 검사합니다.
+
+## 검증
+
+```sh
+pip install -r requirements-dev.txt
+python -m unittest discover -s tests -v
+node --check web/site.js
+node --test tests/club-counts.test.js
 ```
-> 잠시 후 웹 브라우저에서 `http://localhost:8501` 주소로 앱이 자동으로 열립니다.
 
-### 4. 로컬 DB 초기화 및 로그인
-1.  백엔드 서버가 켜진 상태에서, 웹 브라우저에 다음 주소를 입력하여 초기 계정을 생성합니다.
-    `http://127.0.0.1:8000/init-db?secret=local-init-secret`
-2.  프론트엔드 앱에서 아래 정보로 로그인합니다.
-    - **관리자**: ID `admin` / PW `admin1234`
-    - **일반 회원**: ID `20240001` / PW `1234`
+API 테스트는 별도 임시 SQLite를 사용하며 실제 회원 DB에 접근하지 않습니다. Node는 JavaScript 문법 검증 때만 필요하고 운영 서버에는 필요하지 않습니다.
 
----
+기존 `app.py`, `style.css` 및 Streamlit 의존성은 이전 화면 참고용으로 보관했습니다. 새 화면에는 분과별 필터, 회원증 갤러리, 일괄 삭제를 아직 옮기지 않았습니다.
 
-## ☁️ Render.com 배포 가이드
+무료 호스팅의 절전 및 DB 사용량·휴면 정책은 화면 변경과 별개입니다. 외부 DB가 데이터를 보관해도 Render API가 중지되면 회원증 조회는 동작하지 않습니다.
 
-이 프로젝트는 **데이터베이스, 백엔드, 프론트엔드** 세 부분으로 나누어 배포합니다.
+## 동아리별 인원
 
-### 1단계: 데이터베이스 생성 (PostgreSQL)
-1.  Render 대시보드에서 **New +** > **PostgreSQL** 선택.
-2.  이름(예: `membership-db`)을 정하고 **Free** 플랜으로 데이터베이스를 생성합니다.
-3.  생성 후, **Info** 탭에서 **Internal Database URL**을 복사합니다.
-
-### 2단계: 백엔드 배포 (FastAPI)
-1.  Render 대시보드에서 **New +** > **Web Service** 선택 후, GitHub 저장소를 연결합니다.
-2.  아래와 같이 설정합니다.
-    - **Name**: `membership-api` (또는 원하는 이름)
-    - **Runtime**: `Python 3`
-    - **Build Command**: `pip install -r requirements.txt`
-    - **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-    - **Instance Type**: `Free`
-3.  **Environment** 탭에서 아래 환경 변수를 추가합니다.
-    - `DATABASE_URL`: (1단계에서 복사한 Internal Database URL)
-    - `SECRET_KEY`: (JWT 암호화를 위한 임의의 긴 비밀 문자열)
-    - `INIT_DB_SECRET`: (DB 초기화용 비밀 문자열)
-4.  **Create Web Service**를 클릭하여 배포를 시작합니다.
-5.  배포가 완료되면, 서비스 상단에 표시된 URL(예: `https://membership-api.onrender.com`)을 복사합니다.
-
-### 3단계: 프론트엔드 배포 (Streamlit)
-1.  다시 **New +** > **Web Service**를 선택하고 같은 저장소를 연결합니다.
-2.  아래와 같이 설정합니다.
-    - **Name**: `membership-app` (또는 원하는 이름)
-    - **Runtime**: `Python 3`
-    - **Build Command**: `pip install -r requirements.txt`
-    - **Start Command**: `streamlit run app.py --server.port $PORT --server.address 0.0.0.0`
-    - **Instance Type**: `Free`
-3.  **Environment** 탭에서 아래 환경 변수를 추가합니다.
-    - `API_URL`: (2단계에서 복사한 백엔드 서비스 URL)
-4.  **Create Web Service**를 클릭하여 배포합니다.
-
-### 4단계: 배포 후 최초 DB 초기화
-1.  백엔드 배포가 완료된 후, 웹 브라우저에서 아래 형식의 주소로 접속하여 데이터베이스에 초기 계정을 생성합니다.
-    > `https://<백엔드_URL>/init-db?secret=<설정한_INIT_DB_SECRET_값>`
-
-2.  화면에 `{"status":"success", ...}` 메시지가 뜨면 성공입니다.
-3.  이제 프론트엔드 URL로 접속하여 `admin` / `admin1234`로 로그인할 수 있습니다.
-
-## ⚠️ Render 무료 플랜 참고사항
-- **절전 모드(Sleep Mode)**: 15분 동안 트래픽이 없으면 서비스가 절전 모드로 전환됩니다. 절전 상태에서 첫 요청이 오면 다시 깨어나는 데 30초 정도 소요될 수 있습니다.
-- **파일 시스템**: 배포된 서비스의 파일 시스템은 영구적이지 않습니다. 재배포되거나 재시작될 때마다 초기화되므로, SQLite 같은 파일 기반 DB는 사용할 수 없습니다. (이 프로젝트는 PostgreSQL을 사용하도록 설정되어 있습니다.)
+관리자 화면의 **동아리별 인원** 탭에서 전체·활동·비활동 인원을 확인합니다. 여러 동아리에 가입한 회원은 각 동아리에서 한 번씩 집계하며, 같은 학번과 같은 동아리는 중복 계산하지 않습니다. 동아리별 합계인 연인원은 실제 회원 수보다 클 수 있습니다. 소속 없는 회원은 집계에서 제외하고 별도로 표시합니다. 회원 목록의 검색·상태 필터와 무관하게 전체 등록 회원(관리자 포함)을 기준으로 계산하며 새로고침 또는 등록·수정·삭제 후 갱신합니다.

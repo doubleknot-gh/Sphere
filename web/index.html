@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b1726"><title>SPHERE · 디지털 회원증</title>
+<link rel="icon" href="/assets/logo.png"><link rel="stylesheet" href="/assets/site.css">
+<script src="/assets/club-counts.js" defer></script>
+<script src="/assets/site.js" defer></script>
+</head>
+<body>
+<header class="topbar"><a href="/" class="brand"><img src="/assets/logo.png" alt=""><span>SPHERE<small>DIGITAL MEMBERSHIP</small></span></a><span class="edition">총동아리연합회 · 디지털 회원증</span><button id="logout" class="quiet" hidden>로그아웃</button></header>
+<main>
+<div id="feedback" role="status" aria-live="polite" hidden></div>
+<section id="login-view" class="login-layout">
+<div class="intro"><p class="eyebrow">YOUR COMMUNITY, CONNECTED</p><h1>우리의 연결을<br>증명하는 한 장.</h1><p>동아리와 함께하는 모든 순간,<br>나의 디지털 회원증을 만나보세요.</p><div class="intro-line"></div><span class="muted">SPHERE MEMBERSHIP PLATFORM</span></div>
+<form id="login-form" class="panel login-panel"><p class="eyebrow">WELCOME TO SPHERE</p><h2>회원 로그인</h2><p class="muted">등록된 학번과 비밀번호를 입력해주세요.</p><label>학번 / 관리자 ID<input name="username" autocomplete="username" required placeholder="학번을 입력하세요"></label><label>비밀번호<input name="password" type="password" autocomplete="current-password" required placeholder="비밀번호를 입력하세요"></label><button class="primary" type="submit">로그인 →</button><p class="hint">계정이 없거나 로그인이 어려우면 소속 동아리 또는 관리자에게 문의해주세요.</p></form>
+</section>
+<section id="app-view" hidden>
+<div class="page-heading"><div><p class="eyebrow">MY SPHERE</p><h1 id="greeting">나의 회원증</h1></div><nav aria-label="페이지"><button id="card-nav" aria-current="page">회원증</button><button id="admin-nav" hidden>회원 관리</button></nav></div>
+<section id="card-view">
+<div id="notice-banner" class="notice" hidden></div>
+<div class="member-layout"><div><article id="membership-card" class="membership-card"><div class="card-top"><span class="card-chip" aria-hidden="true"></span><div>DIGITAL MEMBER<img src="/assets/ku-logo.png" alt="건국대학교" width="46"></div></div><div class="card-label">NAME</div><h2 id="card-name"></h2><div class="card-label">STUDENT ID</div><p id="card-sid"></p><div class="card-bottom"><span id="card-club"></span><span id="card-status" class="badge"></span></div></article><div class="card-meta"><time id="clock"></time><span id="expiry"></span></div><p class="hint">현재 회원 상태를 표시합니다. 확인이 필요하면 아래 버튼을 눌러주세요.</p><button id="refresh-card" class="quiet">회원 정보 새로고침</button></div>
+<div class="panel account-panel"><p class="eyebrow">ACCOUNT SECURITY</p><h2>비밀번호 변경</h2><form id="password-form"><label>현재 비밀번호<input name="current_password" type="password" autocomplete="current-password" required></label><label>새 비밀번호<input name="new_password" type="password" autocomplete="new-password" required></label><label>새 비밀번호 확인<input name="confirm_password" type="password" autocomplete="new-password" required></label><button type="submit">비밀번호 변경</button></form></div></div>
+<section class="panel community"><div class="section-heading"><div><p class="eyebrow">COMMUNITY</p><h2>자유 소통방</h2></div><button id="refresh-chat" class="quiet">새로고침</button></div><div id="messages" class="messages"></div><form id="message-form" class="message-form"><label class="grow">메시지<input name="message" maxlength="1000" required placeholder="함께 나누고 싶은 이야기를 남겨주세요" autocomplete="off"></label><button type="submit" class="primary">등록</button></form></section>
+</section>
+<section id="admin-view" hidden>
+<div id="stats" class="stats"></div>
+<div class="admin-tabs" role="group" aria-label="관리 기능"><button data-panel="members-panel" aria-pressed="true">회원 목록</button><button data-panel="clubs-panel" aria-pressed="false">동아리별 인원</button><button data-panel="upload-panel" aria-pressed="false">엑셀 일괄 등록</button><button data-panel="add-panel" aria-pressed="false">개별 등록</button><button data-panel="notice-panel" aria-pressed="false">공지사항</button></div>
+<section id="members-panel" class="panel admin-panel"><div class="section-heading"><h2>회원 목록</h2><div><button id="export-members">CSV 다운로드</button> <button id="reload-members">새로고침</button></div></div><div class="filters"><label class="grow">회원 검색<input id="member-search" type="search" placeholder="이름, 학번, 소속 검색"></label><label>상태<select id="status-filter"><option value="">전체</option><option value="active">활동</option><option value="inactive">비활동</option></select></label></div><p id="result-count" class="muted"></p><div class="table-scroll"><table><thead><tr><th>이름</th><th>학번</th><th>소속</th><th>상태</th><th>권한</th><th>관리</th></tr></thead><tbody id="members-body"></tbody></table></div><div class="pagination"><button id="prev-page">이전</button><span id="page-info"></span><button id="next-page">다음</button></div></section>
+<section id="clubs-panel" class="panel admin-panel" hidden>
+<div class="section-heading"><h2>동아리별 인원</h2><button id="reload-clubs">새로고침</button></div>
+<p class="muted">전체 등록 회원 기준입니다. 두 동아리에 가입한 회원은 각 동아리에서 1명씩 집계합니다. 같은 회원의 소속에 동일 동아리가 반복되어도 해당 동아리에서는 1명으로 계산합니다.</p>
+<p id="club-count-summary" role="status"></p>
+<div class="table-scroll"><table><thead><tr><th scope="col">동아리</th><th scope="col">전체 인원</th><th scope="col">활동</th><th scope="col">비활동</th></tr></thead><tbody id="club-counts-body"></tbody></table></div>
+</section>
+<section id="upload-panel" class="panel admin-panel" hidden><p class="eyebrow">IMPORT MEMBERS</p><h2>엑셀로 회원 일괄 등록</h2><p class="muted">파일 미리보기를 확인한 뒤 이름·학번·소속 열을 연결하세요. 기존 회원은 소속이 추가되며 삭제되지 않습니다.</p><label class="file-picker">명단 파일 (xlsx / csv, 최대 10MB)<input id="upload-file" type="file" accept=".xlsx,.csv"></label><p class="hint">한글 문서의 명단은 엑셀에 붙여 넣고 .xlsx로 저장해주세요.</p><div id="upload-mapping" hidden><p id="upload-count"></p><div class="table-scroll"><table id="preview-table"></table></div><form id="upload-form"><div class="mapping"><label>이름 열<select name="name_column" id="name-column"></select></label><label>학번 열<select name="sid_column" id="sid-column"></select></label><label>소속 열<select name="club_column" id="club-column"></select></label></div><label class="checkbox"><input name="has_header" type="checkbox" checked>첫 행은 열 제목입니다</label><p class="hint">신규 회원의 초기 비밀번호는 1234입니다. 로그인 후 변경하도록 안내해주세요.</p><button type="submit" class="primary">설정된 내용으로 등록</button></form></div></section>
+<section id="add-panel" class="panel admin-panel narrow" hidden><h2>신규 회원 등록</h2><form id="add-form"><label>이름<input name="name" required></label><label>학번<input name="student_id" required></label><label>소속 동아리<input name="club" required></label><p class="hint">기존 학번이면 소속을 추가합니다. 신규 회원의 초기 비밀번호는 1234입니다.</p><button type="submit" class="primary">회원 등록</button></form></section>
+<section id="notice-panel" class="panel admin-panel narrow" hidden><h2>공지사항 관리</h2><form id="notice-form"><label>회원증 위에 표시할 공지<textarea name="content" id="notice-content" rows="6" maxlength="5000"></textarea></label><p class="hint">내용을 비우고 저장하면 공지가 사라집니다.</p><button type="submit" class="primary">공지 저장</button></form></section>
+</section></section>
+</main>
+<dialog id="edit-dialog"><form id="edit-form"><div class="section-heading"><h2>회원 관리</h2><button type="button" id="close-edit" class="quiet">닫기</button></div><p id="edit-name" class="muted"></p><p id="edit-feedback" role="status" hidden></p><label>학번<input name="student_id" id="edit-sid" required></label><label>소속<input name="club" id="edit-club" required></label><label>활동 상태<select name="status" id="edit-status"><option value="active">활동</option><option value="inactive">비활동</option></select></label><label>권한<select name="role" id="edit-role"><option value="member">일반 회원</option><option value="admin">관리자</option></select></label><button type="submit" class="primary">변경사항 저장</button><div class="danger-zone"><button type="button" id="reset-password">비밀번호 초기화</button><button type="button" id="delete-member" class="danger">회원 삭제</button></div></form></dialog>
+<footer>SPHERE <span>·</span> 총동아리연합회 디지털 회원증</footer>
+</body></html>
